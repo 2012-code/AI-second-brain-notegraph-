@@ -89,9 +89,9 @@ export async function POST(req: Request) {
     const subscriptionData = await createSubRes.json();
 
     if (!createSubRes.ok) {
-      console.error("PayPal Create Subscription Error:", subscriptionData);
-      const paypalError = subscriptionData?.message || subscriptionData?.error_description || JSON.stringify(subscriptionData);
-      return NextResponse.json({ error: `PayPal error: ${paypalError}` }, { status: 500 });
+      console.error("PayPal Create Subscription Error:", JSON.stringify(subscriptionData));
+      const detail = subscriptionData?.details?.[0]?.description || subscriptionData?.details?.[0]?.issue || subscriptionData?.message || JSON.stringify(subscriptionData);
+      return NextResponse.json({ error: `PayPal: ${detail}` }, { status: 500 });
     }
 
     // 4. Extract the Approval URL
