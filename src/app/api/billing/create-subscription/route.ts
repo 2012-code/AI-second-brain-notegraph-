@@ -74,16 +74,12 @@ export async function POST(req: Request) {
       },
       body: JSON.stringify({
         plan_id: PAYPAL_PLAN_ID,
-        custom_id: user.id, // Store Supabase user.id in custom_id to tie it to the webhook later
+        custom_id: user.id,
         application_context: {
-          brand_name: "Cerebro Premium",
+          brand_name: "NoteGraph",
           locale: "en-US",
           shipping_preference: "NO_SHIPPING",
           user_action: "SUBSCRIBE_NOW",
-          payment_method: {
-            payer_selected: "PAYPAL",
-            payee_preferred: "IMMEDIATE_PAYMENT_REQUIRED"
-          },
           return_url: `${APP_URL}/settings?payment=success`,
           cancel_url: `${APP_URL}/settings?payment=cancelled`
         }
