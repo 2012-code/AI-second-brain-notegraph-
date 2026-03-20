@@ -94,7 +94,8 @@ export async function POST(req: Request) {
 
     if (!createSubRes.ok) {
       console.error("PayPal Create Subscription Error:", subscriptionData);
-      return NextResponse.json({ error: "Failed to create PayPal subscription" }, { status: 500 });
+      const paypalError = subscriptionData?.message || subscriptionData?.error_description || JSON.stringify(subscriptionData);
+      return NextResponse.json({ error: `PayPal error: ${paypalError}` }, { status: 500 });
     }
 
     // 4. Extract the Approval URL
