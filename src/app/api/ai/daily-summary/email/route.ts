@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
 
         const { error } = await resend.emails.send({
             from: 'Cerebro Digest <onboarding@resend.dev>',
-            to: 'abdallahabdelnbii467@gmail.com', // Overriding user.email to bypass unverified Resend domain limit for local development
+            to: user.email,
             subject: `🧠 ${firstName}'s Daily Cerebro Summary`,
             html: `
         <div style="font-family: Inter, sans-serif; max-width: 600px; margin: 0 auto; background: #0A0712; color: #F0F4FF; padding: 40px 24px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05);">

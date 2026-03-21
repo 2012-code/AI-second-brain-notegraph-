@@ -108,7 +108,7 @@ CRITICAL LANGUAGE INSTRUCTION:
 
             await resend.emails.send({
                 from: 'Cerebro <onboarding@resend.dev>',
-                to: 'abdallahabdelnbii467@gmail.com', // Overriding user.email to bypass unverified Resend domain limit for local development
+                to: user.email,
                 subject: `🧠 ${firstName}'s Daily Cerebro Summary`,
                 html: `
           <div style="font-family: Inter, sans-serif; max-width: 600px; margin: 0 auto; background: #0A0A0F; color: #F0F0FF; padding: 40px 24px; border-radius: 16px;">
