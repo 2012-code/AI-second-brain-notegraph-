@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Profile, Subscription } from '@/types';
 import { toast } from 'react-hot-toast';
+import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 import {
     Download, AlertTriangle, Save
 } from 'lucide-react';
@@ -259,33 +260,41 @@ export default function SettingsPage() {
                                 </div>
                                 
                                 {subscription?.status !== 'active' ? (
-                                    <button 
-                                        onClick={async () => {
-                                            try {
-                                                const { data: { session } } = await supabase.auth.getSession();
-                                                if (!session) return toast.error("Not authenticated");
-                                                
-                                                toast.loading("Connecting to PayPal...", { id: "paypal" });
-                                                
-                                                const res = await fetch("/api/billing/create-subscription", {
-                                                    method: "POST",
-                                                    headers: { "Authorization": `Bearer ${session.access_token}` },
-                                                });
-                                                
-                                                const data = await res.json();
-                                                
-                                                if (data.error) throw new Error(data.error);
-                                                if (data.redirectUrl) {
-                                                    toast.success("Redirecting...", { id: "paypal" });
-                                                    window.location.href = data.redirectUrl;
-                                                }
-                                            } catch (err: any) {
-                                                toast.error(err.message || "Failed to start checkout", { id: "paypal" });
-                                            }
-                                        }}
-                                        className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#0EA5E9] to-[#0284C7] text-white text-sm font-medium hover:opacity-90 transition-opacity shadow-[0_0_20px_rgba(14,165,233,0.3)]">
-                                        Upgrade to Pro ↗
-                                    </button>
+                                    <div className="min-w-[200px] relative z-20">
+                                        {process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID ? (
+                                            <PayPalScriptProvider options={{ 
+                                                clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID, 
+                                                vault: true, 
+                                                intent: "subscription" 
+                                            }}>
+                                                <PayPalButtons 
+                                                    style={{ height: 40, shape: "rect", color: "blue", layout: "horizontal", label: "subscribe" }}
+                                                    createSubscription={async (data, actions) => {
+                                                        const { data: { session } } = await supabase.auth.getSession();
+                                                        const res = await fetch('/api/billing/create-subscription', {
+                                                            method: 'POST',
+                                                            headers: { Authorization: `Bearer ${session?.access_token}` }
+                                                        });
+                                                        const subData = await res.json();
+                                                        if (subData.error) throw new Error(subData.error);
+                                                        return subData.subscriptionId;
+                                                    }}
+                                                    onApprove={async (data, actions) => {
+                                                        toast.success("Subscription created successfully! Payment is processing...");
+                                                        setTimeout(() => window.location.reload(), 2000);
+                                                    }}
+                                                    onError={(err) => {
+                                                        toast.error("PayPal checkout failed.");
+                                                        console.error("PayPal Error:", err);
+                                                    }}
+                                                />
+                                            </PayPalScriptProvider>
+                                        ) : (
+                                            <button disabled className="px-6 py-2.5 rounded-xl bg-gray-600 text-white text-sm font-medium">
+                                                Missing Config
+                                            </button>
+                                        )}
+                                    </div>
                                 ) : (
                                     <a href="https://www.paypal.com/myaccount/autopay" target="_blank" rel="noopener noreferrer"
                                         className="px-4 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs font-medium hover:bg-black/60 transition-colors">
