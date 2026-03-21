@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Profile, Subscription } from '@/types';
 import { toast } from 'react-hot-toast';
@@ -15,16 +15,9 @@ const PERSONALITIES = ['friendly', 'professional', 'casual', 'concise'];
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const SUMMARY_STYLES = ['brief', 'detailed'];
 
-export default function SettingsPage() {
+function PaymentStatusHandler({ setTab }: { setTab: (tab: string) => void }) {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const supabase = createClient();
-    const [tab, setTab] = useState('Profile');
-    const [profile, setProfile] = useState<Profile | null>(null);
-    const [subscription, setSubscription] = useState<Subscription | null>(null);
-    const [saving, setSaving] = useState(false);
-    const [email, setEmail] = useState('');
-    const [fullName, setFullName] = useState('');
 
     useEffect(() => {
         const paymentStatus = searchParams.get('payment');
@@ -37,7 +30,20 @@ export default function SettingsPage() {
             router.replace('/settings', { scroll: false });
             setTab('Billing');
         }
-    }, [searchParams, router]);
+    }, [searchParams, router, setTab]);
+
+    return null;
+}
+
+export default function SettingsPage() {
+    const router = useRouter();
+    const supabase = createClient();
+    const [tab, setTab] = useState('Profile');
+    const [profile, setProfile] = useState<Profile | null>(null);
+    const [subscription, setSubscription] = useState<Subscription | null>(null);
+    const [saving, setSaving] = useState(false);
+    const [email, setEmail] = useState('');
+    const [fullName, setFullName] = useState('');
 
     useEffect(() => {
         const load = async () => {
@@ -86,6 +92,10 @@ export default function SettingsPage() {
 
     return (
         <div className="min-h-screen bg-transparent relative z-10 animate-in fade-in duration-500">
+            <Suspense fallback={null}>
+                <PaymentStatusHandler setTab={setTab} />
+            </Suspense>
+
             {/* Header */}
             <div className="border-b border-white/5 bg-[#050B18]/80 backdrop-blur-md px-8 py-5 flex items-center gap-4 sticky top-0 z-20">
                 <Link href="/dashboard" className="text-text-muted hover:text-white transition-colors text-sm flex items-center gap-1.5 font-medium">
