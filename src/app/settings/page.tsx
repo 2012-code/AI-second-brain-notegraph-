@@ -8,8 +8,7 @@ import {
     Download, AlertTriangle, Save
 } from 'lucide-react';
 import Link from 'next/link';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 const TABS = ['Profile', 'AI Settings', 'Billing', 'Data', 'Danger Zone'];
 const PERSONALITIES = ['friendly', 'professional', 'casual', 'concise'];
@@ -17,8 +16,8 @@ const PERSONALITIES = ['friendly', 'professional', 'casual', 'concise'];
 const SUMMARY_STYLES = ['brief', 'detailed'];
 
 export default function SettingsPage() {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const router = useRouter();
+    const searchParams = useSearchParams();
     const supabase = createClient();
     const [tab, setTab] = useState('Profile');
     const [profile, setProfile] = useState<Profile | null>(null);
@@ -26,6 +25,19 @@ export default function SettingsPage() {
     const [saving, setSaving] = useState(false);
     const [email, setEmail] = useState('');
     const [fullName, setFullName] = useState('');
+
+    useEffect(() => {
+        const paymentStatus = searchParams.get('payment');
+        if (paymentStatus === 'success') {
+            toast.success('Subscription created successfully! Payment is processing...');
+            router.replace('/settings', { scroll: false });
+            setTab('Billing');
+        } else if (paymentStatus === 'cancelled') {
+            toast.error('Subscription checkout was cancelled.');
+            router.replace('/settings', { scroll: false });
+            setTab('Billing');
+        }
+    }, [searchParams, router]);
 
     useEffect(() => {
         const load = async () => {
