@@ -8,25 +8,35 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 export async function POST(request: NextRequest) {
     // Verify cron secret
     const authHeader = request.headers.get('authorization');
+    console.log('[cron] Authorization header received:', authHeader ? 'present' : 'missing');
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+        console.log('[cron] Unauthorized - header mismatch');
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const admin = createAdminClient();
 
     // Get all active users with summaries enabled
-    const { data: profiles } = await admin
+    const { data: profiles, error: profilesError } = await admin
         .from('profiles')
         .select('id, full_name, summary_enabled, summary_time, timezone')
         .eq('summary_enabled', true);
 
-    if (!profiles?.length) return NextResponse.json({ sent: 0 });
+    console.log('[cron] Profiles with summary_enabled=true:', profiles?.length ?? 0);
+    if (profilesError) console.error('[cron] Error fetching profiles:', profilesError.message);
+
+    if (!profiles?.length) return NextResponse.json({ sent: 0, reason: 'no_profiles_enabled' });
 
     let sent = 0;
 
     for (const profile of profiles) {
         try {
-            if (!profile.summary_time) continue;
+            console.log(`[cron] Checking user ${profile.id} | summary_time=${profile.summary_time} | timezone=${profile.timezone}`);
+
+            if (!profile.summary_time) {
+                console.log(`[cron] Skipping ${profile.id}: no summary_time set`);
+                continue;
+            }
             
             const tz = profile.timezone || 'UTC';
             const currentUtc = new Date();
@@ -44,12 +54,20 @@ export async function POST(request: NextRequest) {
             const targetParts = profile.summary_time.split(':');
             const targetHour = parseInt(targetParts[0], 10);
             const targetMinute = parseInt(targetParts[1] || '0', 10);
+
+            console.log(`[cron] User ${profile.id}: local time=${localTimeStr} (${tz}), target=${targetHour}:${String(targetMinute).padStart(2,'0')}`);
             
             // Only send in the correct hour
-            if (currentLocalHour !== targetHour) continue;
+            if (currentLocalHour !== targetHour) {
+                console.log(`[cron] Skipping ${profile.id}: wrong hour (${currentLocalHour} vs ${targetHour})`);
+                continue;
+            }
             
             // Wait until the minute has arrived or passed
-            if (currentLocalMinute < targetMinute) continue;
+            if (currentLocalMinute < targetMinute) {
+                console.log(`[cron] Skipping ${profile.id}: minute not reached yet (${currentLocalMinute} < ${targetMinute})`);
+                continue;
+            }
 
             // Ensure we haven't already sent a summary in the last 20 hours
             const twentyHoursAgo = new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString();
@@ -60,12 +78,18 @@ export async function POST(request: NextRequest) {
                 .gte('created_at', twentyHoursAgo)
                 .limit(1);
 
-            if (sentRecently && sentRecently.length > 0) continue;
-
+            if (sentRecently && sentRecently.length > 0) {
+                console.log(`[cron] Skipping ${profile.id}: already sent in last 20h`);
+                continue;
+            }
 
             // Get user email
             const { data: { user } } = await admin.auth.admin.getUserById(profile.id);
-            if (!user?.email) continue;
+            if (!user?.email) {
+                console.log(`[cron] Skipping ${profile.id}: no email found`);
+                continue;
+            }
+            console.log(`[cron] Sending email to ${user.email}`);
 
             // Get notes from last 24h
             const yesterday = new Date();
