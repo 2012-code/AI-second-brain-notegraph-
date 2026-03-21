@@ -8,11 +8,15 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 export async function POST(request: NextRequest) {
     // Verify cron secret
     const authHeader = request.headers.get('authorization');
+    const expectedSecret = (process.env.CRON_SECRET || '').trim();
+    
     console.log('[cron] Authorization header received:', authHeader ? 'present' : 'missing');
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-        console.log('[cron] Unauthorized - header mismatch');
+    
+    if (!authHeader || authHeader !== `Bearer ${expectedSecret}`) {
+        console.log(`[cron] Unauthorized - header mismatch. Expected: Bearer ${expectedSecret?.slice(0,5)}... Received: ${authHeader?.slice(0,12)}...`);
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
 
     const admin = createAdminClient();
 
@@ -23,9 +27,16 @@ export async function POST(request: NextRequest) {
         .eq('summary_enabled', true);
 
     console.log('[cron] Profiles with summary_enabled=true:', profiles?.length ?? 0);
-    if (profilesError) console.error('[cron] Error fetching profiles:', profilesError.message);
+    if (profilesError) {
+        console.error('[cron] Error fetching profiles:', profilesError.message);
+        return NextResponse.json({ error: profilesError.message }, { status: 500 });
+    }
 
-    if (!profiles?.length) return NextResponse.json({ sent: 0, reason: 'no_profiles_enabled' });
+    if (!profiles?.length) {
+        console.log('[cron] No profiles found with summary_enabled=true in database.');
+        return NextResponse.json({ sent: 0, reason: 'no_profiles_enabled' });
+    }
+
 
     let sent = 0;
 
