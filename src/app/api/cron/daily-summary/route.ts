@@ -39,9 +39,29 @@ export async function POST(request: NextRequest) {
             }).format(currentUtc);
             
             const currentLocalHour = parseInt(localTimeStr.split(':')[0], 10);
-            const targetHour = parseInt(profile.summary_time.split(':')[0], 10);
+            const currentLocalMinute = parseInt(localTimeStr.split(':')[1], 10);
             
+            const targetParts = profile.summary_time.split(':');
+            const targetHour = parseInt(targetParts[0], 10);
+            const targetMinute = parseInt(targetParts[1] || '0', 10);
+            
+            // Only send in the correct hour
             if (currentLocalHour !== targetHour) continue;
+            
+            // Wait until the minute has arrived or passed
+            if (currentLocalMinute < targetMinute) continue;
+
+            // Ensure we haven't already sent a summary in the last 20 hours
+            const twentyHoursAgo = new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString();
+            const { data: sentRecently } = await admin
+                .from('daily_summaries')
+                .select('id')
+                .eq('user_id', profile.id)
+                .gte('created_at', twentyHoursAgo)
+                .limit(1);
+
+            if (sentRecently && sentRecently.length > 0) continue;
+
 
             // Get user email
             const { data: { user } } = await admin.auth.admin.getUserById(profile.id);
