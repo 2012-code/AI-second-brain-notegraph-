@@ -232,7 +232,7 @@ export default function AIChatPanel({
                 body: JSON.stringify({
                     message: userMessage,
                     sessionId,
-                    noteContext: notes,
+                    noteContext: notes.slice(0, 10).map(n => ({ title: n.title, content: (n.content || '').slice(0, 500) })),
                     sessionMessages: chatMessages.slice(-6).map(m => ({ role: m.role, content: m.content })),
                 }),
             });
