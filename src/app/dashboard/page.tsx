@@ -24,8 +24,20 @@ function DashboardContent() {
     const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState<string>('all');
     const [isExpanded, setIsExpanded] = useState(false);
+    const [mobileView, setMobileView] = useState<'list' | 'editor'>('list');
+    const [isMobile, setIsMobile] = useState(false);
     const tag = searchParams.get('tag');
     const noteParam = searchParams.get('note');
+
+    useEffect(() => {
+        const checkMobile = () => {
+            const mobile = window.innerWidth < 1024;
+            setIsMobile(mobile);
+        };
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     useEffect(() => {
         const load = async () => {
@@ -133,10 +145,15 @@ function DashboardContent() {
             notes={notes}
             selectedNote={selectedNote}
             onNotesChange={setNotes}
-            onSelectNote={setSelectedNote}
+            onSelectNote={(note) => {
+                setSelectedNote(note);
+                if (isMobile) setMobileView('editor');
+            }}
             activeFilter={activeFilter}
             onFilterChange={setActiveFilter}
             isExpanded={isExpanded}
+            mobileShowEditor={mobileView === 'editor'}
+            onMobileBack={() => setMobileView('list')}
         >
             {activeFilter === 'daily' ? (
                 <DailySummary />
@@ -151,7 +168,7 @@ function DashboardContent() {
             ) : (
                 <>
                     {/* Note List Panel */}
-                    <div className={`notes-list-panel flex flex-col ${isExpanded ? 'hidden' : ''}`}>
+                    <div className={`notes-list-panel flex flex-col ${isExpanded || (isMobile && mobileView === 'editor') ? 'hidden' : ''}`}>
                         <div className="px-4 pt-4 pb-3 shrink-0 border-b border-[var(--border-subtle)]">
                             <div className="relative">
                                 <Search size={16} className="absolute left-[14px] top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
@@ -176,7 +193,10 @@ function DashboardContent() {
                                 <NoteList
                                     notes={displayNotes}
                                     selectedId={selectedNote?.id || null}
-                                    onSelect={setSelectedNote}
+                                    onSelect={(note) => {
+                                        setSelectedNote(note);
+                                        if (isMobile) setMobileView('editor');
+                                    }}
                                     searchQuery={searchQuery}
                                 />
                             )}
@@ -184,7 +204,7 @@ function DashboardContent() {
                     </div>
 
                     {/* Editor Area */}
-                    <div className={`editor-panel ${isExpanded ? 'full-width' : ''}`}>
+                    <div className={`editor-panel ${isExpanded ? 'full-width' : ''} ${isMobile && mobileView === 'list' ? 'hidden' : ''}`}>
                         {selectedNote ? (
                             <NoteEditor
                                 key={selectedNote.id}

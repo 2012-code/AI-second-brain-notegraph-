@@ -16,6 +16,9 @@ interface Props {
     onSelectNote: (note: Note) => void;
     activeFilter: string;
     onFilterChange: (filter: string) => void;
+    isSidebarOpen?: boolean; // Added for AIChatPanel context
+    onToggleSidebar?: () => void; // Added for AIChatPanel context
+    currentNote?: Note | null; // Added for AIChatPanel context
 }
 
 export default function Sidebar({ notes, onNotesChange, onSelectNote, activeFilter, onFilterChange }: Props) {
@@ -95,11 +98,11 @@ export default function Sidebar({ notes, onNotesChange, onSelectNote, activeFilt
     return (
         <aside className="sidebar">
             {/* Logo */}
-            <div className="sidebar-header">
-                <div className="logo-icon">
-                    <Sparkles size={14} className="text-white" />
+            <div className="sidebar-header" style={{ padding: '20px 16px' }}>
+                <div style={{ width: '38px', height: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <img src="/logo.png" alt="NoteGraph Logo" style={{ width: '135%', height: '135%', objectFit: 'contain' }} />
                 </div>
-                <span className="logo-text">NoteGraph</span>
+                <span className="logo-text" style={{ fontSize: '18px' }}>NoteGraph</span>
             </div>
 
             {/* New Note Button */}
@@ -135,7 +138,9 @@ export default function Sidebar({ notes, onNotesChange, onSelectNote, activeFilt
                     onClick={() => onFilterChange('galaxy')}
                     className={`nav-link ${activeFilter === 'galaxy' ? 'active' : ''}`}
                 >
-                    {galaxyIcon()}
+                    <div style={{ width: '15px', height: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {galaxyIcon()}
+                    </div>
                     Galaxy
                 </button>
 

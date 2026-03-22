@@ -66,8 +66,8 @@ export default function SettingsPage() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
         const { error } = await supabase.from('profiles').update({
-            full_name: fullName,
             ...profile,
+            full_name: fullName,
         }).eq('id', user.id);
         setSaving(false);
         if (error) toast.error(error.message);

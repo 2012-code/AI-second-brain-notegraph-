@@ -14,9 +14,7 @@ export default function DailySummary() {
     const [sendingEmail, setSendingEmail] = useState(false);
     const [emailSent, setEmailSent] = useState(false);
     
-    // Settings view state
-    const [showSettings, setShowSettings] = useState(false);
-    const [saving, setSaving] = useState(false);
+
 
     useEffect(() => {
         const loadProfile = async () => {
@@ -28,27 +26,6 @@ export default function DailySummary() {
         loadProfile();
     }, []);
 
-    const saveSettings = async () => {
-        if (!profile) return;
-        setSaving(true);
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) { setSaving(false); return; }
-        
-        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        
-        const { error } = await supabase.from('profiles').update({
-            summary_enabled: profile.summary_enabled,
-            summary_time: profile.summary_time,
-            timezone: timezone
-        }).eq('id', user.id);
-        
-        setSaving(false);
-        if (error) toast.error('Failed to save settings');
-        else {
-            toast.success('Email preferences saved!');
-            setShowSettings(false);
-        }
-    };
 
     const generateSummary = async () => {
         setLoading(true);
@@ -110,66 +87,7 @@ export default function DailySummary() {
                         A personalized digest of your recent notes, themes, and insights.
                     </p>
                 </div>
-                <button 
-                    onClick={() => setShowSettings(!showSettings)}
-                    style={{
-                        display: 'inline-flex', alignItems: 'center', gap: '6px',
-                        fontSize: '12px', color: showSettings ? 'white' : 'var(--text-muted)',
-                        background: showSettings ? 'rgba(255,255,255,0.05)' : 'transparent',
-                        padding: '6px 10px', borderRadius: '8px', 
-                        border: '1px solid', borderColor: showSettings ? 'var(--border-default)' : 'var(--border-subtle)',
-                        transition: 'all 0.2s', cursor: 'pointer'
-                    }}>
-                    {showSettings ? <X size={12} /> : <Settings size={12} />} 
-                    {showSettings ? 'Close Settings' : 'Email settings'}
-                </button>
             </div>
-
-            {/* Settings Drawer */}
-            {showSettings && profile && (
-                <div style={{
-                    background: 'rgba(12,18,32,0.8)', border: '1px solid var(--border-default)',
-                    borderRadius: '16px', padding: '24px', animation: 'fadeIn 0.2s ease-out'
-                }}>
-                    <h3 style={{ fontSize: '16px', color: 'white', marginBottom: '16px', fontWeight: '500' }}>Automation Preferences</h3>
-                    
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between' }}>
-                            <div>
-                                <p style={{ fontSize: '14px', fontWeight: '500', color: 'white', margin: '0 0 4px 0' }}>Daily Summary Email</p>
-                                <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>Automatically receive your AI digest every day.</p>
-                            </div>
-                            <button onClick={() => setProfile({ ...profile, summary_enabled: !profile.summary_enabled })}
-                                className={`w-11 h-6 rounded-full transition-all duration-300 relative ${profile.summary_enabled ? 'bg-[#0EA5E9]' : 'bg-black/40 border border-white/10'}`}>
-                                <div className={`w-4 h-4 rounded-full absolute top-[3px] transition-all duration-300 shadow-sm ${profile.summary_enabled ? 'left-[24px] bg-white' : 'left-[3px] bg-text-muted'}`} />
-                            </button>
-                        </div>
-
-                        <div style={{ opacity: profile.summary_enabled ? 1 : 0.4, pointerEvents: profile.summary_enabled ? 'auto' : 'none', transition: 'opacity 0.2s' }}>
-                            <p style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-secondary)', marginBottom: '8px' }}>Delivery Time (Your Local Time)</p>
-                            <input type="time" value={profile.summary_time}
-                                onChange={e => setProfile({ ...profile, summary_time: e.target.value })}
-                                style={{
-                                    background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)',
-                                    borderRadius: '8px', padding: '8px 12px', color: 'white',
-                                    fontSize: '14px', outline: 'none', width: '140px'
-                                }} />
-                        </div>
-
-                        <div style={{ paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'flex-end' }}>
-                            <button onClick={saveSettings} disabled={saving} style={{
-                                display: 'inline-flex', alignItems: 'center', gap: '8px',
-                                background: 'linear-gradient(135deg, #0EA5E9, #0284C7)', color: 'white',
-                                border: 'none', padding: '8px 16px', borderRadius: '8px',
-                                fontSize: '13px', fontWeight: '500', cursor: saving ? 'not-allowed' : 'pointer',
-                                opacity: saving ? 0.7 : 1, boxShadow: '0 0 15px rgba(14, 165, 233, 0.3)'
-                            }}>
-                                {saving ? 'Saving...' : <><Save size={14} /> Save Settings</>}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* Main card */}
             <div style={{
@@ -272,22 +190,6 @@ export default function DailySummary() {
                             <div className="prose-ai" style={{ color: 'var(--text-secondary)', lineHeight: '1.9', fontSize: '15px', whiteSpace: 'pre-wrap', fontStyle: 'italic' }}>
                                 {summary}
                             </div>
-                        </div>
-
-                        {/* Email CTA / Status */}
-                        <div style={{ padding: '18px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(14, 165, 233,0.06)', borderTop: '1px solid var(--border-subtle)' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <Mail size={15} style={{ color: 'var(--text-muted)' }} />
-                                <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>
-                                    Daily auto-summaries are {loading ? 'checked...' : (profile?.summary_enabled ? 'enabled' : 'disabled')}
-                                </p>
-                            </div>
-                            <button onClick={() => setShowSettings(true)} style={{
-                                fontSize: '13px', fontWeight: '600', background: 'none', border: 'none', cursor: 'pointer',
-                                color: '#818CF8', transition: 'color 0.2s',
-                            }}>
-                                Edit Settings
-                            </button>
                         </div>
                     </div>
                 )}

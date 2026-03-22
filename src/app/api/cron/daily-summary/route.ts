@@ -3,6 +3,8 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { chat } from '@/lib/groq';
 import { Resend } from 'resend';
 
+export const maxDuration = 60;
+
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(request: NextRequest) {
@@ -40,13 +42,13 @@ export async function POST(request: NextRequest) {
 
     let sent = 0;
 
-    for (const profile of profiles) {
+    await Promise.allSettled(profiles.map(async (profile) => {
         try {
             console.log(`[cron] Checking user ${profile.id} | summary_time=${profile.summary_time} | timezone=${profile.timezone}`);
 
             if (!profile.summary_time) {
                 console.log(`[cron] Skipping ${profile.id}: no summary_time set`);
-                continue;
+                return;
             }
             
             const tz = profile.timezone || 'UTC';
@@ -59,25 +61,23 @@ export async function POST(request: NextRequest) {
                 hour12: false
             }).format(currentUtc);
             
-            const currentLocalHour = parseInt(localTimeStr.split(':')[0], 10);
+            let currentLocalHour = parseInt(localTimeStr.split(':')[0], 10);
+            if (currentLocalHour === 24) currentLocalHour = 0;
             const currentLocalMinute = parseInt(localTimeStr.split(':')[1], 10);
             
             const targetParts = profile.summary_time.split(':');
             const targetHour = parseInt(targetParts[0], 10);
             const targetMinute = parseInt(targetParts[1] || '0', 10);
 
+            const currentTotalMinutes = currentLocalHour * 60 + currentLocalMinute;
+            const targetTotalMinutes = targetHour * 60 + targetMinute;
+
             console.log(`[cron] User ${profile.id}: local time=${localTimeStr} (${tz}), target=${targetHour}:${String(targetMinute).padStart(2,'0')}`);
             
-            // Only send in the correct hour
-            if (currentLocalHour !== targetHour) {
-                console.log(`[cron] Skipping ${profile.id}: wrong hour (${currentLocalHour} vs ${targetHour})`);
-                continue;
-            }
-            
-            // Wait until the minute has arrived or passed
-            if (currentLocalMinute < targetMinute) {
-                console.log(`[cron] Skipping ${profile.id}: minute not reached yet (${currentLocalMinute} < ${targetMinute})`);
-                continue;
+            // Wait until the target time has arrived or passed for today
+            if (currentTotalMinutes < targetTotalMinutes) {
+                console.log(`[cron] Skipping ${profile.id}: target time not reached today (${currentLocalHour}:${currentLocalMinute} < ${targetHour}:${targetMinute})`);
+                return;
             }
 
             // Ensure we haven't already sent a summary in the last 20 hours
@@ -91,14 +91,14 @@ export async function POST(request: NextRequest) {
 
             if (sentRecently && sentRecently.length > 0) {
                 console.log(`[cron] Skipping ${profile.id}: already sent in last 20h`);
-                continue;
+                return;
             }
 
             // Get user email
             const { data: { user } } = await admin.auth.admin.getUserById(profile.id);
             if (!user?.email) {
                 console.log(`[cron] Skipping ${profile.id}: no email found`);
-                continue;
+                return;
             }
             console.log(`[cron] Sending email to ${user.email}`);
 
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
                 .gte('created_at', yesterday.toISOString())
                 .limit(10);
 
-            if (!recentNotes?.length) continue;
+            if (!recentNotes?.length) return;
 
             // Get top topics across all notes
             const { data: allNotes } = await admin
@@ -196,7 +196,7 @@ ${summary}
         } catch (e) {
             console.error(`Failed for user ${profile.id}:`, e);
         }
-    }
+    }));
 
     return NextResponse.json({ sent });
 }

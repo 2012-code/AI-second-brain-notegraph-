@@ -37,13 +37,12 @@ interface Props {
 
 export default function AIChatPanel({
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    isSidebarOpen,
+    isSidebarOpen = false,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    onToggleSidebar,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    currentNote,
-    notes
-}: Props) {
+    onToggleSidebar = () => { },
+    currentNote = null,
+    notes = []
+}: Partial<Props>) {
     const supabase = createClient();
     const [aiView, setAiView] = useState<'chat' | 'history'>('chat');
     const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
@@ -92,17 +91,23 @@ export default function AIChatPanel({
 
     const loadChatSessions = async () => {
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
+            const { data: { user }, error: userError } = await supabase.auth.getUser();
+            if (userError || !user) return;
 
-            const res = await fetch(`/api/chat/sessions?userId=${user.id}`);
-            const data = await res.json();
-            if (data.error) {
-                setChatSessionsError(data.error);
+            const { data: sessions, error } = await supabase
+                .from('chat_sessions')
+                .select('id, title, created_at, updated_at')
+                .eq('user_id', user.id)
+                .order('updated_at', { ascending: false })
+                .limit(30);
+
+            if (error) {
+                console.error('Error loading sessions:', error.message);
                 return;
             }
-            setChatSessions(data.sessions || []);
-            setChatSessionsError(null);
+
+            setChatSessions(sessions || []);
+
         } catch (err) {
             console.error('Unexpected error loading sessions:', err);
         }
@@ -135,21 +140,44 @@ export default function AIChatPanel({
     };
 
     const loadSessionMessages = async (sessionId: string) => {
-        try {
-            const { data, error } = await supabase
-                .from('chat_messages')
-                .select('*')
-                .eq('session_id', sessionId)
-                .order('created_at', { ascending: true });
+        if (!sessionId) return;
 
-            if (error) {
-                console.error('Failed to load messages:', error.message);
+        try {
+            // Step 1: Get current user
+            const { data: { user }, error: userError } = await supabase.auth.getUser();
+            if (userError || !user) {
+                console.error('Auth error loading messages:', userError);
                 return;
             }
 
-            setChatMessages(data || []);
+            // Step 2: Fetch messages for this session
+            const { data: messages, error: messagesError } = await supabase
+                .from('chat_messages')
+                .select('*')
+                .eq('session_id', sessionId)
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: true });
+
+            if (messagesError) {
+                console.error('Error loading messages:', messagesError.message);
+                // Show error in UI
+                setChatMessages([{
+                    id: 'error',
+                    role: 'assistant',
+                    content: 'Could not load this conversation. Please try again.',
+                    created_at: new Date().toISOString(),
+                }]);
+                return;
+            }
+
+            // Step 3: Set messages — even if empty array
+            console.log(`Loaded ${messages?.length || 0} messages for session ${sessionId}`);
+            setChatMessages(messages || []);
+
+            // Step 4: Switch to chat view
             setCurrentSessionId(sessionId);
             setAiView('chat');
+
         } catch (err) {
             console.error('Unexpected error loading messages:', err);
         }
@@ -198,13 +226,13 @@ export default function AIChatPanel({
             };
             setChatMessages(prev => [...prev, userMsg]);
 
-            // Call AI
             const response = await fetch('/api/ai/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     message: userMessage,
                     sessionId,
+                    noteContext: notes,
                     sessionMessages: chatMessages.slice(-6).map(m => ({ role: m.role, content: m.content })),
                 }),
             });
@@ -261,8 +289,8 @@ export default function AIChatPanel({
                     </button>
                     <button
                         className={`ai-toggle-btn ${aiView === 'history' ? 'active' : ''}`}
-                        onClick={() => {
-                            loadChatSessions();
+                        onClick={async () => {
+                            await loadChatSessions(); // Always reload fresh when tab clicked
                             setAiView('history');
                         }}
                     >

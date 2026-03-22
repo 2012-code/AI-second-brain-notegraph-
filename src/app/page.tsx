@@ -2,49 +2,39 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Brain, Zap, Search, Mail, Tag, Network, ArrowRight, Check, Star, Sparkles, ChevronRight } from 'lucide-react';
+import { 
+  ArrowRight, 
+  Check, 
+  Menu, 
+  X,
+  MessageSquare,
+  Search,
+  FileText,
+  Sparkles,
+  Network,
+  Mail
+} from 'lucide-react';
 
-const FEATURES = [
-  { icon: Brain, title: 'AI Auto-Organization', desc: 'Every note gets automatically tagged, categorized, and summarized. Your brain stays organized without any effort.', color: '#818CF8', glow: 'rgba(14, 165, 233,0.15)' },
-  { icon: Zap, title: 'Chat With Your Notes', desc: 'Ask questions in plain English. Get answers from your own knowledge base, with citations to the exact notes used.', color: '#F9A8D4', glow: 'rgba(244,114,182,0.15)' },
-  { icon: Search, title: 'Semantic Search', desc: 'Find notes by what they mean, not just what they say. Search "startup ideas I had in January" and actually get results.', color: '#818CF8', glow: 'rgba(14, 165, 233,0.15)' },
-  { icon: Mail, title: 'Daily AI Summary', desc: 'Wake up to a personalized digest of your recent captures, emerging themes, and one thing worth revisiting today.', color: '#FCD34D', glow: 'rgba(245,158,11,0.15)' },
-  { icon: Tag, title: 'Automatic Tagging', desc: 'AI extracts key topics and generates tags automatically. Your tag cloud grows organically as you add more notes.', color: '#818CF8', glow: 'rgba(14, 165, 233,0.15)' },
-  { icon: Network, title: 'Cross-Note Connections', desc: 'NoteGraph detects when notes relate to each other and surfaces those connections. Discover insights you missed.', color: '#FCD34D', glow: 'rgba(245,158,11,0.15)' },
-];
-
-
-
-const STEPS = [
-  { num: '01', title: 'Dump anything in', desc: 'Text, links, ideas, meeting notes — just type it in. No folders, no templates, no structure required.' },
-  { num: '02', title: 'AI organizes it instantly', desc: 'NoteGraph generates titles, tags, categories, summaries, and connections between notes automatically.' },
-  { num: '03', title: 'Find and use anything', desc: 'Chat with your entire knowledge base, search by meaning, or receive daily digests that surface what matters.' },
-];
-
-const PLAN_FEATURES = [
-  'Unlimited notes',
-  'All AI features',
-  'Daily AI summaries via email',
-  'Semantic vector search',
-  'Cross-note connections graph',
-  'Arabic & multilingual support',
-  'Data export',
-  'Priority support',
+const FEATURE_CARDS = [
+  { icon: Sparkles, title: 'AI Auto-Organization', body: 'Every note gets automatically titled, tagged, categorized and summarized the moment you click Organize.' },
+  { icon: Network, title: 'Knowledge Galaxy', body: 'Your notes visualized as an interactive galaxy. Every connection between your ideas shown as glowing lines in space.' },
+  { icon: MessageSquare, title: 'Chat with your notes', body: 'Ask anything about your knowledge base. "What did I write about marketing last month?" and get an instant answer.' },
+  { icon: Search, title: 'Semantic search', body: 'Search by meaning, not just keywords. Find notes even when you don\'t remember the exact words you used.' },
+  { icon: FileText, title: 'Rich text editor', body: 'Bold, italic, headings, lists — a full editor with preview mode. Write in Arabic or English, it adapts automatically.' },
+  { icon: Mail, title: 'AI Insights Digest', body: 'Generate a stunning personal digest with one click. NoteGraph surfaces emerging themes and takeaways from your recent activity.', color: '#06B6D4' },
 ];
 
 export default function LandingPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePos({ x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight });
-    };
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Animated particle canvas
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -56,14 +46,13 @@ export default function LandingPage() {
     resize();
     window.addEventListener('resize', resize);
 
-    const particles = Array.from({ length: 60 }, () => ({
+    const particles = Array.from({ length: 40 }, () => ({
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height,
-      r: Math.random() * 1.5 + 0.3,
-      vx: (Math.random() - 0.5) * 0.25,
-      vy: (Math.random() - 0.5) * 0.25,
-      opacity: Math.random() * 0.4 + 0.05,
-      color: Math.random() > 0.5 ? '79,70,229' : '245,158,11',
+      r: Math.random() * 1.5 + 0.5,
+      vx: (Math.random() - 0.5) * 0.15,
+      vy: (Math.random() - 0.5) * 0.15,
+      opacity: Math.random() * 0.2 + 0.05,
     }));
 
     const draw = () => {
@@ -76,401 +65,532 @@ export default function LandingPage() {
         if (p.y > canvas.height) p.y = 0;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${p.color},${p.opacity})`;
+        ctx.fillStyle = `rgba(201, 168, 76, ${p.opacity})`;
         ctx.fill();
       });
       animId = requestAnimationFrame(draw);
     };
     draw();
-
     return () => { cancelAnimationFrame(animId); window.removeEventListener('resize', resize); };
   }, []);
 
+  const smoothScroll = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
+    e.preventDefault();
+    const el = document.getElementById(id);
+    if (el) {
+      const offset = 80;
+      const bodyRect = document.body.getBoundingClientRect().top;
+      const elementRect = el.getBoundingClientRect().top;
+      const elementPosition = elementRect - bodyRect;
+      const offsetPosition = elementPosition - offset;
+      window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+      setMobileMenuOpen(false);
+    }
+  };
+
+  const HeroMockup = () => (
+    <div className="app-mockup hero-mockup" style={{ padding: '0', border: 'none', background: 'transparent' }}>
+      <img 
+        src="/screenshots/editor.png" 
+        alt="NoteGraph Editor Screenshot" 
+        style={{ width: '100%', height: 'auto', borderRadius: '12px', display: 'block', boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }} 
+      />
+    </div>
+  );
+
+  const GalaxyMockup = () => (
+    <div className="galaxy-mockup" style={{ padding: '0', border: 'none', background: 'transparent' }}>
+      <img 
+        src="/screenshots/galaxy.png" 
+        alt="NoteGraph Knowledge Galaxy Screenshot" 
+        style={{ width: '100%', height: 'auto', borderRadius: '12px', display: 'block' }} 
+      />
+    </div>
+  );
+
   return (
-    <div style={{ background: '#04070F', color: '#F0F4FF', minHeight: '100vh', overflowX: 'hidden', position: 'relative' }}>
+    <div style={{ background: '#0A0F1E', color: '#F4F4FF', minHeight: '100vh', fontFamily: "'Outfit', sans-serif" }}>
+      <canvas ref={canvasRef} style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', opacity: 0.6 }} />
 
-      {/* Particle canvas */}
-      <canvas ref={canvasRef} style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }} />
-
-      {/* Ambient gradient orbs */}
-      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
-        <div style={{
-          position: 'absolute',
-          width: '900px', height: '900px',
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(14, 165, 233,0.12) 0%, transparent 70%)',
-          top: '-300px', left: '-200px',
-          transform: `translate(${mousePos.x * 20}px, ${mousePos.y * 20}px)`,
-          transition: 'transform 1s ease',
-        }} />
-        <div style={{
-          position: 'absolute',
-          width: '700px', height: '700px',
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(245,158,11,0.08) 0%, transparent 70%)',
-          bottom: '-200px', right: '-200px',
-          transform: `translate(${-mousePos.x * 15}px, ${-mousePos.y * 15}px)`,
-          transition: 'transform 1s ease',
-        }} />
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          backgroundImage: `linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px)`,
-          backgroundSize: '64px 64px',
-          maskImage: 'radial-gradient(ellipse 80% 80% at 50% 50%, black 0%, transparent 100%)',
-          WebkitMaskImage: 'radial-gradient(ellipse 80% 80% at 50% 50%, black 0%, transparent 100%)',
-        }} />
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', width: '800px', height: '800px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(201, 168, 76, 0.05) 0%, transparent 70%)', top: '-100px', left: '-100px' }} />
+        <div style={{ position: 'absolute', width: '600px', height: '600px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(201, 168, 76, 0.03) 0%, transparent 70%)', bottom: '10%', right: '-100px' }} />
       </div>
 
-      {/* ── NAVBAR ── */}
       <nav style={{
-        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
-        background: 'rgba(4,7,15,0.75)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
-        height: '60px',
-        display: 'flex', alignItems: 'center',
-        padding: '0 32px',
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000,
+        height: '80px', display: 'flex', alignItems: 'center',
+        background: scrolled ? 'rgba(10, 15, 30, 0.85)' : 'transparent',
+        backdropFilter: scrolled ? 'blur(16px)' : 'none',
+        WebkitBackdropFilter: scrolled ? 'blur(16px)' : 'none',
+        borderBottom: scrolled ? '1px solid rgba(201, 168, 76, 0.1)' : '1px solid transparent',
+        transition: 'all 0.3s ease',
+        padding: '0 24px'
       }}>
-        <div style={{ maxWidth: '1100px', width: '100%', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
-            <div style={{ width: '30px', height: '30px', borderRadius: '8px', background: 'linear-gradient(135deg, #0EA5E9, #0284C7)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 16px rgba(14, 165, 233, 0.4)' }}>
-              <Brain size={14} color="white" />
+        <div style={{ maxWidth: '1200px', width: '100%', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none' }}>
+            <div style={{ width: '40px', height: '40px' }}>
+              <img src="/logo.png" alt="Logo" style={{ width: '135%', height: '135%', objectFit: 'contain', transform: 'translate(-5px, -5px)' }} />
             </div>
-            <span style={{ fontFamily: "'Cal Sans', sans-serif", fontSize: '18px', color: '#F0F4FF', letterSpacing: '-0.01em' }}>NoteGraph</span>
+            <span style={{ fontFamily: "'Cal Sans', sans-serif", fontSize: '22px', color: '#F4F4FF', letterSpacing: '-0.02em' }}>NoteGraph</span>
           </Link>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '28px' }}>
-            <div className="nav-links" style={{ display: 'flex', gap: '24px' }}>
-              {['#features', '#how-it-works', '#pricing'].map((href, i) => (
-                <a key={href} href={href} style={{ fontSize: '14px', color: 'rgba(240,244,255,0.55)', textDecoration: 'none', transition: 'color 0.2s' }}
-                  onMouseEnter={e => (e.currentTarget.style.color = '#F0F4FF')}
-                  onMouseLeave={e => (e.currentTarget.style.color = 'rgba(240,244,255,0.55)')}>
-                  {['Features', 'How it works', 'Pricing'][i]}
-                </a>
-              ))}
-            </div>
-            <div className="nav-buttons" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <Link href="/login" style={{ fontSize: '14px', color: 'rgba(240,244,255,0.6)', textDecoration: 'none', padding: '6px 14px', borderRadius: '8px', transition: 'all 0.2s' }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = '#F0F4FF'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(240,244,255,0.6)'; }}>
-                Sign in
-              </Link>
-              <Link href="/signup" style={{
-                fontSize: '14px', fontWeight: '500', color: 'white', textDecoration: 'none',
-                padding: '7px 18px', borderRadius: '9px',
-                background: 'linear-gradient(135deg, #0EA5E9, #0284C7)',
-                boxShadow: '0 0 20px rgba(14, 165, 233,0.3)',
-                transition: 'all 0.2s',
-              }}
-                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 0 30px rgba(14, 165, 233,0.5)'; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 0 20px rgba(14, 165, 233,0.3)'; }}>
-                Get started free
-              </Link>
-            </div>
+          <div style={{ display: 'none', alignItems: 'center', gap: '40px' }} className="lg-flex">
+            <a href="#features" onClick={(e) => smoothScroll(e, 'features')} className="nav-link" style={{ fontSize: '15px', color: 'rgba(244, 244, 255, 0.6)', textDecoration: 'none', transition: 'color 0.2s' }}>Features</a>
+            <a href="#how-it-works" onClick={(e) => smoothScroll(e, 'how-it-works')} className="nav-link" style={{ fontSize: '15px', color: 'rgba(244, 244, 255, 0.6)', textDecoration: 'none', transition: 'color 0.2s' }}>How it works</a>
+            <a href="#pricing" onClick={(e) => smoothScroll(e, 'pricing')} className="nav-link" style={{ fontSize: '15px', color: 'rgba(244, 244, 255, 0.6)', textDecoration: 'none', transition: 'color 0.2s' }}>Pricing</a>
           </div>
+
+          <div style={{ display: 'none', alignItems: 'center', gap: '12px' }} className="lg-flex">
+             <Link href="/login" style={{ fontSize: '15px', color: 'rgba(244, 244, 255, 0.8)', textDecoration: 'none', padding: '10px 20px' }}>Log in</Link>
+             <Link href="/signup" className="btn-primary" style={{
+               background: 'linear-gradient(135deg, #C9A84C, #E8C97A)',
+               color: '#0A0F1E', padding: '12px 24px', borderRadius: '12px', fontSize: '15px', fontWeight: '700',
+               textDecoration: 'none', transition: 'all 0.2s'
+             }}
+             onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 0 24px rgba(201,168,76,0.35)'; }}
+             onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
+               Start for free
+             </Link>
+          </div>
+
+          <button style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', zIndex: 1100 }} className="lg-hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
         </div>
+
+        {mobileMenuOpen && (
+          <div style={{
+            position: 'fixed', inset: 0, background: '#0A0F1E', zIndex: 1050,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '32px', padding: '40px'
+          }}>
+            <a href="#features" onClick={(e) => smoothScroll(e, 'features')} style={{ fontSize: '24px', color: 'white', textDecoration: 'none', fontFamily: "'Cal Sans', sans-serif" }}>Features</a>
+            <a href="#how-it-works" onClick={(e) => smoothScroll(e, 'how-it-works')} style={{ fontSize: '24px', color: 'white', textDecoration: 'none', fontFamily: "'Cal Sans', sans-serif" }}>How it works</a>
+            <a href="#pricing" onClick={(e) => smoothScroll(e, 'pricing')} style={{ fontSize: '24px', color: 'white', textDecoration: 'none', fontFamily: "'Cal Sans', sans-serif" }}>Pricing</a>
+            <Link href="/signup" style={{
+              width: '100%', textAlign: 'center', background: 'linear-gradient(135deg, #C9A84C, #E8C97A)',
+              color: '#0A0F1E', padding: '16px', borderRadius: '12px', fontSize: '18px', fontWeight: '700', textDecoration: 'none'
+            }}>
+              Start for free
+            </Link>
+          </div>
+        )}
       </nav>
 
-      {/* ── HERO ── */}
-      <section style={{ paddingTop: '160px', paddingBottom: '120px', textAlign: 'center', position: 'relative', zIndex: 1, padding: '160px 24px 120px' }}>
-        <div style={{ maxWidth: '780px', margin: '0 auto' }}>
-
-          {/* Badge */}
-          <h1 style={{
-            fontSize: 'clamp(48px, 7vw, 88px)',
-            fontFamily: "'Cal Sans', sans-serif",
-            fontWeight: 'normal',
-            lineHeight: '1.05',
-            letterSpacing: '-0.03em',
-            marginBottom: '28px',
-            color: '#F0F4FF',
-          }}>
-            Your second brain,<br />
-            <span style={{
-              background: 'linear-gradient(135deg, #A5B4FC 0%, #C084FC 50%, #F9A8D4 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-            }}>built by AI.</span>
-          </h1>
-
-          <p style={{
-            fontSize: '18px', lineHeight: '1.7',
-            color: 'rgba(240,244,255,0.60)', maxWidth: '520px', margin: '0 auto 44px',
-            fontWeight: '300',
-          }}>
-            Dump your thoughts, ideas, and notes. NoteGraph organizes everything, connects the dots, and surfaces what you need — before you even ask.
-          </p>
-
-          <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '32px' }}>
-            <Link href="/signup" style={{
+      <main style={{ position: 'relative', zIndex: 1 }}>
+        <section style={{ padding: '180px 24px 100px', textAlign: 'center' }}>
+          <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+            <div className="hero-badge" style={{
               display: 'inline-flex', alignItems: 'center', gap: '8px',
-              background: 'linear-gradient(135deg, #0EA5E9, #0284C7)',
-              color: 'white', textDecoration: 'none',
-              fontWeight: '500', fontSize: '15px',
-              padding: '13px 28px', borderRadius: '12px',
-              boxShadow: '0 0 40px rgba(14, 165, 233,0.35), 0 4px 20px rgba(0,0,0,0.3)',
-              transition: 'all 0.25s',
-            }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 0 60px rgba(14, 165, 233,0.5), 0 8px 30px rgba(0,0,0,0.4)'; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 0 40px rgba(14, 165, 233,0.35), 0 4px 20px rgba(0,0,0,0.3)'; }}>
-              Start free trial <ArrowRight size={15} />
-            </Link>
-            <Link href="/demo" style={{
-              display: 'inline-flex', alignItems: 'center', gap: '8px',
-              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-              color: 'rgba(240,244,255,0.8)', textDecoration: 'none',
-              fontWeight: '400', fontSize: '15px',
-              padding: '13px 28px', borderRadius: '12px',
-              transition: 'all 0.25s', backdropFilter: 'blur(10px)',
-            }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.09)'; e.currentTarget.style.color = '#F0F4FF'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(240,244,255,0.8)'; }}>
-              See demo <ChevronRight size={15} />
-            </Link>
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', flexWrap: 'wrap', fontSize: '13px', color: 'rgba(240,244,255,0.35)' }}>
-            {['7 days free', 'No credit card required', 'Cancel anytime'].map((t, i) => (
-              <span key={t} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                {i > 0 && <span style={{ opacity: 0.3 }}>·</span>}
-                <Check size={12} style={{ color: '#818CF8' }} />
-                {t}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {/* Hero visual: floating preview card */}
-        <div style={{ maxWidth: '860px', margin: '80px auto 0', position: 'relative' }}>
-          <div style={{
-            background: 'rgba(12,18,32,0.85)',
-            backdropFilter: 'blur(24px)',
-            WebkitBackdropFilter: 'blur(24px)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: '20px',
-            padding: '24px',
-            boxShadow: '0 0 0 1px rgba(14, 165, 233,0.1), 0 40px 80px rgba(0,0,0,0.6), 0 0 60px rgba(14, 165, 233,0.06)',
-          }}>
-            {/* Fake browser chrome */}
-            <div style={{ display: 'flex', gap: '7px', marginBottom: '20px', alignItems: 'center' }}>
-              {['#EF4444', '#F59E0B', '#10B981'].map(c => <div key={c} style={{ width: '10px', height: '10px', borderRadius: '50%', background: c, opacity: 0.8 }} />)}
-              <div style={{ flex: 1, height: '22px', background: 'rgba(255,255,255,0.04)', borderRadius: '6px', marginLeft: '8px', display: 'flex', alignItems: 'center', paddingLeft: '10px' }}>
-                <span style={{ fontSize: '11px', color: 'rgba(240,244,255,0.25)' }}>notegraph.online/dashboard</span>
-              </div>
+              padding: '6px 16px', borderRadius: '100px',
+              background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.25)',
+              color: '#C9A84C', fontSize: '13px', fontWeight: '500', marginBottom: '24px'
+            }}>
+              <span style={{ fontSize: '16px' }}>✦</span> AI-Powered Second Brain
             </div>
-            {/* Fake dashboard content */}
-            <div className="hero-dashboard-mock" style={{ display: 'grid', gridTemplateColumns: '180px 1fr', gap: '16px', height: '260px' }}>
-              <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: '12px', padding: '12px' }}>
-                <div style={{ fontSize: '10px', color: 'rgba(240,244,255,0.3)', marginBottom: '12px', letterSpacing: '0.06em' }}>NOTES</div>
-                {['Project Ideas', 'Meeting Notes', 'Research Links', 'Daily Journal', 'Book Summaries'].map((n, i) => (
-                  <div key={n} style={{ fontSize: '11px', padding: '7px 8px', borderRadius: '6px', color: i === 0 ? '#A5B4FC' : 'rgba(240,244,255,0.45)', background: i === 0 ? 'rgba(14, 165, 233,0.12)' : 'transparent', marginBottom: '2px' }}>{n}</div>
-                ))}
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: '12px', padding: '16px', flex: 1 }}>
-                  <div style={{ fontSize: '14px', fontWeight: '500', color: '#F0F4FF', marginBottom: '8px', fontFamily: '"Cal Sans", sans-serif' }}>Project Ideas</div>
-                  <div style={{ fontSize: '12px', color: 'rgba(240,244,255,0.45)', lineHeight: '1.7' }}>Build an AI-powered second brain that automatically organizes your thoughts...</div>
-                  <div style={{ display: 'flex', gap: '6px', marginTop: '12px' }}>
-                    {['#ai', '#product', '#ideas'].map(tag => (
-                      <span key={tag} style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '10px', background: 'rgba(14, 165, 233,0.12)', color: '#818CF8', border: '1px solid rgba(14, 165, 233,0.2)' }}>{tag}</span>
-                    ))}
-                  </div>
-                </div>
-                <div style={{ background: 'linear-gradient(135deg, rgba(14, 165, 233,0.08), rgba(14, 165, 233,0.06))', border: '1px solid rgba(14, 165, 233,0.15)', borderRadius: '12px', padding: '12px', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-                  <Sparkles size={14} style={{ color: '#818CF8', flexShrink: 0, marginTop: '1px' }} />
-                  <div style={{ fontSize: '12px', color: 'rgba(240,244,255,0.6)', lineHeight: '1.6' }}>
-                    <span style={{ color: '#A5B4FC', fontWeight: '500' }}>AI Summary:</span> Your recent notes show a pattern around AI tooling, productivity, and research into knowledge management...
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          {/* Glow underneath the preview */}
-          <div style={{ position: 'absolute', bottom: '-40px', left: '50%', transform: 'translateX(-50%)', width: '70%', height: '80px', background: 'rgba(14, 165, 233,0.15)', filter: 'blur(40px)', borderRadius: '50%', pointerEvents: 'none' }} />
-        </div>
-      </section>
 
-      {/* ── HOW IT WORKS ── */}
-      <section id="how-it-works" style={{ padding: '120px 24px', position: 'relative', zIndex: 1 }}>
-        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '72px' }}>
-            <p style={{ fontSize: '11px', letterSpacing: '0.12em', color: '#818CF8', fontWeight: '600', marginBottom: '12px', textTransform: 'uppercase' }}>Simple by design</p>
-            <h2 style={{ fontFamily: '"Cal Sans", sans-serif', fontSize: 'clamp(32px, 4vw, 52px)', color: '#F0F4FF', fontWeight: 'normal', letterSpacing: '-0.02em' }}>Three steps to clarity</h2>
-          </div>
+            <h1 style={{
+              fontFamily: "'Cal Sans', sans-serif",
+              fontSize: 'clamp(44px, 8vw, 92px)',
+              lineHeight: '1',
+              color: '#F4F4FF',
+              letterSpacing: '-0.04em',
+              marginBottom: '28px'
+            }}>
+              Your thoughts deserve<br />
+              <span className="gradient-text">better than a folder.</span>
+            </h1>
 
-          <div className="steps-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', position: 'relative' }}>
-            {STEPS.map((step, i) => (
-              <div key={step.num} style={{
-                background: 'rgba(12,18,32,0.7)',
-                border: '1px solid rgba(255,255,255,0.06)',
-                borderRadius: '20px', padding: '36px 32px',
-                position: 'relative', overflow: 'hidden',
-                backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
-              }}>
-                <div style={{
-                  position: 'absolute', top: 0, left: 0, right: 0, height: '2px',
-                  background: i === 1 ? 'linear-gradient(90deg, #0EA5E9, #0284C7)' : 'linear-gradient(90deg, rgba(14, 165, 233, 0.3), transparent)',
-                }} />
-                <div style={{ fontSize: 'clamp(48px, 5vw, 72px)', fontFamily: '"Cal Sans", sans-serif', fontWeight: 'normal', color: 'rgba(14, 165, 233,0.15)', lineHeight: 1, marginBottom: '20px', letterSpacing: '-0.03em' }}>{step.num}</div>
-                <h3 style={{ fontSize: '20px', fontFamily: '"Cal Sans", sans-serif', color: '#F0F4FF', marginBottom: '12px', fontWeight: 'normal' }}>{step.title}</h3>
-                <p style={{ fontSize: '14px', color: 'rgba(240,244,255,0.5)', lineHeight: '1.7', fontWeight: '300' }}>{step.desc}</p>
-                {i < 2 && (
-                  <div style={{ position: 'absolute', top: '50%', right: '-20px', transform: 'translateY(-50%)', zIndex: 2, display: 'none' }}>
-                    <ArrowRight size={18} style={{ color: 'rgba(14, 165, 233,0.4)' }} />
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+            <p style={{
+              fontSize: 'clamp(17px, 2vw, 20px)',
+              lineHeight: '1.6',
+              color: 'rgba(244, 244, 255, 0.6)',
+              maxWidth: '600px',
+              margin: '0 auto 48px',
+              fontWeight: 300
+            }}>
+              Notegraph turns your raw ideas, notes, and brain dumps into an organized, searchable, connected knowledge base — automatically. No folders. No tags. No manual work. Ever.
+            </p>
 
-      {/* ── FEATURES ── */}
-      <section id="features" style={{ padding: '120px 24px', position: 'relative', zIndex: 1, background: 'rgba(8,12,24,0.5)' }}>
-        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '72px' }}>
-            <p style={{ fontSize: '11px', letterSpacing: '0.12em', color: '#FCD34D', fontWeight: '600', marginBottom: '12px', textTransform: 'uppercase' }}>Built different</p>
-            <h2 style={{ fontFamily: '"Cal Sans", sans-serif', fontSize: 'clamp(32px, 4vw, 52px)', color: '#F0F4FF', fontWeight: 'normal', letterSpacing: '-0.02em' }}>Everything your brain needs</h2>
-          </div>
-
-          <div className="features-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
-            {FEATURES.map((f) => (
-              <div key={f.title} style={{
-                background: 'rgba(11,17,29,0.8)',
-                border: '1px solid rgba(255,255,255,0.06)',
-                borderRadius: '18px', padding: '28px',
-                backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
-                transition: 'all 0.3s',
-                cursor: 'default',
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'center', marginBottom: '32px' }}>
+              <Link href="/signup" className="btn-primary" style={{
+                background: 'linear-gradient(135deg, #C9A84C, #E8C97A)',
+                color: '#0A0F1E', padding: '18px 36px', borderRadius: '14px', fontSize: '17px', fontWeight: '700',
+                textDecoration: 'none', transition: 'all 0.2s',
+                display: 'flex', alignItems: 'center', gap: '10px'
               }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = `${f.color}30`; e.currentTarget.style.background = `rgba(11,17,29,0.95)`; e.currentTarget.style.boxShadow = `0 20px 40px rgba(0,0,0,0.4), 0 0 30px ${f.glow}`; e.currentTarget.style.transform = 'translateY(-3px)'; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; e.currentTarget.style.background = 'rgba(11,17,29,0.8)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)'; }}>
-                <div style={{
-                  width: '44px', height: '44px', borderRadius: '12px',
-                  background: `${f.glow}`, border: `1px solid ${f.color}25`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  marginBottom: '18px',
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 0 24px rgba(201,168,76,0.35)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
+                Start for free — no credit card <ArrowRight size={18} />
+              </Link>
+              <a href="#how-it-works" onClick={(e) => smoothScroll(e, 'how-it-works')} className="btn-secondary" style={{
+                background: 'transparent', border: '1px solid rgba(201,168,76,0.4)',
+                color: '#C9A84C', padding: '18px 36px', borderRadius: '14px', fontSize: '17px', fontWeight: '500',
+                textDecoration: 'none', transition: 'all 0.2s'
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(201,168,76,0.08)'; e.currentTarget.style.borderColor = 'rgba(201,168,76,0.7)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(201,168,76,0.4)'; }}>
+                See how it works ↓
+              </a>
+            </div>
+
+            <div style={{ fontSize: '14px', color: 'rgba(244, 244, 255, 0.35)', letterSpacing: '0.02em' }}>
+              7-day free trial  ·  Cancel anytime  ·  Takes 30 seconds to set up
+            </div>
+          </div>
+        </section>
+
+        <section style={{ padding: '100px 24px' }}>
+          <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+            <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+              <div className="section-label" style={{ fontSize: '13px', fontWeight: '600', color: '#C9A84C', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '16px', borderLeft: '2px solid #C9A84C', paddingLeft: '10px', display: 'inline-block' }}>THE PROBLEM</div>
+              <h2 style={{ fontFamily: "'Cal Sans', sans-serif", fontSize: 'clamp(32px, 5vw, 48px)', color: '#F4F4FF', lineHeight: '1.2' }}>You have great ideas.<br />They just keep getting lost.</h2>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+              {[
+                { icon: '📋', title: 'Notes scattered everywhere', body: 'Apple Notes, Notion, random docs, voice memos. Your ideas live in 5 different places and you can never find anything.' },
+                { icon: '🗂️', title: 'Manual organization is exhausting', body: 'Creating folders, adding tags, linking notes. You spend more time organizing than actually thinking.' },
+                { icon: '🔍', title: 'Your knowledge goes to waste', body: 'You wrote something useful 3 months ago. You\'ll never find it again. All that thinking — wasted.' }
+              ].map((card, i) => (
+                <div key={i} className="feature-card" style={{
+                  background: '#0F1629',
+                  border: '1px solid rgba(201,168,76,0.12)',
+                  borderRadius: '24px', padding: '40px',
+                  transition: 'all 0.3s ease'
                 }}>
-                  <f.icon size={19} style={{ color: f.color }} />
+                  <div style={{ fontSize: '40px', marginBottom: '24px' }}>{card.icon}</div>
+                  <h3 style={{ fontFamily: "'Cal Sans', sans-serif", fontSize: '20px', color: '#F4F4FF', marginBottom: '16px' }}>{card.title}</h3>
+                  <p style={{ color: 'rgba(244, 244, 255, 0.5)', lineHeight: '1.6', fontWeight: 300 }}>{card.body}</p>
                 </div>
-                <h3 style={{ fontSize: '16px', fontWeight: '500', color: '#F0F4FF', marginBottom: '10px', letterSpacing: '-0.01em' }}>{f.title}</h3>
-                <p style={{ fontSize: '13px', color: 'rgba(240,244,255,0.5)', lineHeight: '1.7', fontWeight: '300' }}>{f.desc}</p>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ── PRICING ── */}
-      <section id="pricing" style={{ padding: '120px 24px', position: 'relative', zIndex: 1 }}>
-        <div style={{ maxWidth: '500px', margin: '0 auto', textAlign: 'center' }}>
-          <p style={{ fontSize: '11px', letterSpacing: '0.12em', color: '#818CF8', fontWeight: '600', marginBottom: '12px', textTransform: 'uppercase' }}>Simple pricing</p>
-          <h2 style={{ fontFamily: '"Cal Sans", sans-serif', fontSize: 'clamp(32px, 4vw, 52px)', color: '#F0F4FF', fontWeight: 'normal', letterSpacing: '-0.02em', marginBottom: '56px' }}>One plan. Everything included.</h2>
-
-          <div className="pricing-card" style={{
-            background: 'rgba(12,18,32,0.9)',
-            border: '1px solid rgba(14, 165, 233,0.25)',
-            borderRadius: '24px', padding: '48px 40px',
-            backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-            boxShadow: '0 0 0 1px rgba(14, 165, 233,0.1), 0 40px 80px rgba(0,0,0,0.5), 0 0 80px rgba(14, 165, 233,0.08)',
-            position: 'relative', overflow: 'hidden',
-          }}>
-            {/* Top gradient line */}
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '1px', background: 'linear-gradient(90deg, transparent, #0EA5E9, #0284C7, transparent)' }} />
-
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: '16px', padding: '4px 12px', fontSize: '11px', fontWeight: '600', color: '#FCD34D', marginBottom: '28px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-              <Star size={10} fill="currentColor" /> Most popular
+        <section id="how-it-works" style={{ padding: '100px 24px', background: 'rgba(201, 168, 76, 0.02)' }}>
+          <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+             <div style={{ textAlign: 'center', marginBottom: '100px' }}>
+              <div className="section-label" style={{ fontSize: '13px', fontWeight: '600', color: '#C9A84C', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '16px', borderLeft: '2px solid #C9A84C', paddingLeft: '10px', display: 'inline-block' }}>HOW IT WORKS</div>
+              <h2 style={{ fontFamily: "'Cal Sans', sans-serif", fontSize: 'clamp(32px, 5vw, 48px)', color: '#F4F4FF' }}>Just write. AI does the rest.</h2>
             </div>
 
-            <div style={{ marginBottom: '32px' }}>
-              <span style={{ fontFamily: '"Cal Sans", sans-serif', fontSize: '64px', fontWeight: 'normal', color: '#F0F4FF', letterSpacing: '-0.04em' }}>$9.99</span>
-              <span style={{ fontSize: '16px', color: 'rgba(240,244,255,0.4)', marginLeft: '4px' }}>/month</span>
-              <p style={{ fontSize: '13px', color: 'rgba(240,244,255,0.4)', marginTop: '6px' }}>7 days free. No credit card required.</p>
-            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '120px' }}>
+               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '60px', alignItems: 'center' }}>
+                  <div style={{ order: 1 }}>
+                     <div className="step-number">01</div>
+                     <h3 style={{ fontFamily: "'Cal Sans', sans-serif", fontSize: '32px', color: '#F4F4FF', marginBottom: '20px' }}>Dump your thoughts</h3>
+                     <p style={{ color: 'rgba(244, 244, 255, 0.6)', lineHeight: '1.8', fontSize: '17px', fontWeight: 300 }}>Write anything — a raw idea, meeting notes, something you read, a 2am thought. No structure needed. No format required. Just type.</p>
+                  </div>
+                  <div style={{ order: 2, borderRadius: '24px', overflow: 'hidden', height: '300px' }}>
+                    <img 
+                      src="/screenshots/step1.png" 
+                      alt="Dump your thoughts" 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '24px', border: '1px solid rgba(201,168,76,0.12)' }} 
+                    />
+                  </div>
+               </div>
 
-            <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '28px 0', marginBottom: '28px' }}>
-              <ul style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '13px' }}>
-                {PLAN_FEATURES.map(f => (
-                  <li key={f} style={{ display: 'flex', gap: '12px', alignItems: 'center', fontSize: '14px', color: 'rgba(240,244,255,0.7)' }}>
-                    <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: 'rgba(14, 165, 233,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <Check size={10} style={{ color: '#818CF8' }} />
+               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '60px', alignItems: 'center' }}>
+                  <div style={{ order: 2 }}>
+                     <div className="step-number">02</div>
+                     <h3 style={{ fontFamily: "'Cal Sans', sans-serif", fontSize: '32px', color: '#F4F4FF', marginBottom: '20px' }}>AI organizes everything</h3>
+                     <p style={{ color: 'rgba(244, 244, 255, 0.6)', lineHeight: '1.8', fontSize: '17px', fontWeight: 300 }}>Click Organize and watch the magic. Notegraph auto-generates a title, assigns tags, picks a category, writes a summary, and restructures your content into clean readable notes.</p>
+                  </div>
+                  <div style={{ order: 1 }}>
+                    <div style={{ background: '#0F1629', borderRadius: '24px', border: '1px solid rgba(201,168,76,0.12)', padding: '24px', height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ background: 'linear-gradient(135deg, #C9A84C, #E8C97A)', padding: '12px 24px', borderRadius: '12px', color: '#0A0F1E', fontWeight: '700', boxShadow: '0 0 30px rgba(201,168,76, 0.4)' }}>
+                           Organize ✦
+                        </div>
                     </div>
-                    {f}
-                  </li>
-                ))}
-              </ul>
+                  </div>
+               </div>
+
+               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '60px', alignItems: 'center' }}>
+                  <div style={{ order: 1 }}>
+                     <div className="step-number">03</div>
+                     <h3 style={{ fontFamily: "'Cal Sans', sans-serif", fontSize: '32px', color: '#F4F4FF', marginBottom: '20px' }}>Explore your knowledge galaxy</h3>
+                     <p style={{ color: 'rgba(244, 244, 255, 0.6)', lineHeight: '1.8', fontSize: '17px', fontWeight: 300 }}>Every note becomes a glowing node in your personal Knowledge Galaxy. See how your ideas connect. Discover patterns you never knew existed. Chat with your entire knowledge base like it's a person.</p>
+                  </div>
+                  <div style={{ order: 2, borderRadius: '24px', overflow: 'hidden', height: '300px' }}>
+                    <img 
+                      src="/screenshots/step3.png" 
+                      alt="Explore your knowledge galaxy" 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '24px', border: '1px solid rgba(201,168,76,0.12)' }} 
+                    />
+                  </div>
+               </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="features" style={{ padding: '100px 24px' }}>
+          <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+            <div style={{ textAlign: 'center', marginBottom: '80px' }}>
+              <div className="section-label" style={{ fontSize: '13px', fontWeight: '600', color: '#C9A84C', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '16px', borderLeft: '2px solid #C9A84C', paddingLeft: '10px', display: 'inline-block' }}>FEATURES</div>
+              <h2 style={{ fontFamily: "'Cal Sans', sans-serif", fontSize: 'clamp(32px, 5vw, 48px)', color: '#F4F4FF' }}>Everything your brain needs.<br />Nothing it doesn't.</h2>
             </div>
 
-            <Link href="/signup" style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-              background: 'linear-gradient(135deg, #0EA5E9, #0284C7)',
-              color: 'white', textDecoration: 'none',
-              fontWeight: '500', fontSize: '15px',
-              padding: '15px 28px', borderRadius: '12px',
-              boxShadow: '0 0 30px rgba(14, 165, 233,0.35)',
-              transition: 'all 0.2s',
-            }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 0 50px rgba(14, 165, 233,0.5)'; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 0 30px rgba(14, 165, 233,0.35)'; }}>
-              Start Free Trial <ArrowRight size={15} />
-            </Link>
-            <p style={{ fontSize: '12px', color: 'rgba(240,244,255,0.3)', marginTop: '14px' }}>Cancel anytime. No questions asked.</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+               {FEATURE_CARDS.map((f, i) => (
+                 <div key={i} className="feature-card" style={{
+                    background: '#0F1629',
+                    border: '1px solid rgba(201,168,76,0.12)',
+                    borderRadius: '24px', padding: '32px',
+                    transition: 'all 0.3s ease'
+                 }}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'rgba(201,168,76,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px' }}>
+                       <f.icon style={{ color: '#C9A84C' }} size={20} />
+                    </div>
+                    <h3 style={{ fontFamily: "'Cal Sans', sans-serif", fontSize: '19px', color: '#F4F4FF', marginBottom: '12px' }}>{f.title}</h3>
+                    <p style={{ color: 'rgba(244, 244, 255, 0.5)', lineHeight: '1.6', fontSize: '14px', fontWeight: 300 }}>{f.body}</p>
+                 </div>
+               ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
+        <section id="pricing" style={{ padding: '100px 24px', background: 'rgba(10, 15, 30, 0.5)' }}>
+          <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+            <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+              <div className="section-label" style={{ fontSize: '13px', fontWeight: '600', color: '#C9A84C', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '16px', borderLeft: '2px solid #C9A84C', paddingLeft: '10px', display: 'inline-block' }}>PRICING</div>
+              <h2 style={{ fontFamily: "'Cal Sans', sans-serif", fontSize: 'clamp(32px, 5vw, 48px)', color: '#F4F4FF', marginBottom: '16px' }}>One plan. Everything included.</h2>
+              <p style={{ color: 'rgba(244, 244, 255, 0.5)', maxWidth: '500px', margin: '0 auto', fontSize: '17px', fontWeight: 300 }}>No feature gates. No hidden limits. Everything Notegraph can do — yours from day one.</p>
+            </div>
 
-      {/* ── FINAL CTA ── */}
-      <section style={{ padding: '140px 24px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
-        <div style={{ maxWidth: '640px', margin: '0 auto' }}>
-          <h2 style={{ fontFamily: '"Cal Sans", sans-serif', fontSize: 'clamp(36px, 5vw, 64px)', color: '#F0F4FF', fontWeight: 'normal', letterSpacing: '-0.03em', marginBottom: '20px', lineHeight: '1.1' }}>
-            Ready to think<br />
-            <span style={{ background: 'linear-gradient(135deg, #A5B4FC, #C084FC, #F9A8D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>better?</span>
+            <div style={{ maxWidth: '500px', margin: '0 auto' }}>
+              <div className="pricing-card" style={{
+                background: '#0F1629',
+                border: '1px solid rgba(201,168,76,0.35)',
+                borderRadius: '32px', padding: '60px 40px',
+                textAlign: 'center', position: 'relative',
+                boxShadow: '0 0 40px rgba(201,168,76,0.08)'
+              }}>
+                 <div style={{ display: 'inline-block', padding: '6px 16px', borderRadius: '100px', background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.25)', color: '#C9A84C', fontSize: '13px', fontWeight: '600', marginBottom: '32px' }}>✦ Notegraph Pro</div>
+                 
+                 <div style={{ marginBottom: '40px' }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center' }}>
+                       <span style={{ fontFamily: "'Cal Sans', sans-serif", fontSize: '64px', color: '#F4F4FF' }}>$9.99</span>
+                       <span style={{ fontSize: '20px', color: 'rgba(244, 244, 255, 0.4)', marginLeft: '8px' }}>/ month</span>
+                    </div>
+                 </div>
+
+                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '48px', textAlign: 'left' }}>
+                    {[
+                      'Unlimited notes',
+                      'AI auto-organization',
+                      'Knowledge Galaxy',
+                      'Chat with your notes',
+                      'Semantic search',
+                      'Rich text editor with Arabic support',
+                      'On-demand AI insights digest',
+                      '7-day free trial'
+                    ].map((feature, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                         <Check size={16} className="pricing-feature-check" style={{ color: '#C9A84C' }} />
+                         <span style={{ fontSize: '15px', color: 'rgba(244, 244, 255, 0.8)', fontWeight: 300 }}>{feature}</span>
+                      </div>
+                    ))}
+                 </div>
+
+                 <Link href="/signup" className="btn-primary" style={{
+                   display: 'block', background: 'linear-gradient(135deg, #C9A84C, #E8C97A)',
+                   color: '#0A0F1E', padding: '20px', borderRadius: '16px', fontSize: '18px', fontWeight: '700',
+                   textDecoration: 'none', transition: 'all 0.2s', marginBottom: '20px'
+                 }}>
+                   Start your free trial
+                 </Link>
+                 
+                 <div style={{ fontSize: '14px', color: 'rgba(244, 244, 255, 0.4)' }}>No credit card required to start.<br />Cancel anytime, no questions asked.</div>
+              </div>
+
+              <div style={{ textAlign: 'center', marginTop: '40px', color: 'rgba(244, 244, 255, 0.4)', fontStyle: 'italic', fontSize: '16px' }}>
+                "Less than a coffee a month for a second brain that never forgets."
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section style={{ padding: '140px 24px', textAlign: 'center' }}>
+          <h2 style={{ fontFamily: "'Cal Sans', sans-serif", fontSize: 'clamp(36px, 8vw, 64px)', color: '#F4F4FF', lineHeight: '1', marginBottom: '24px' }}>
+            Your best ideas are still<br />waiting to be connected.
           </h2>
-          <p style={{ fontSize: '16px', color: 'rgba(240,244,255,0.5)', marginBottom: '40px', lineHeight: '1.7', fontWeight: '300' }}>
-            Join thousands of people who use NoteGraph to organize their thinking and never lose an idea again.
+          <p style={{ color: 'rgba(244, 244, 255, 0.6)', fontSize: '20px', marginBottom: '40px', fontWeight: 300 }}>
+            Start your free trial today. No credit card. No setup. Just open it and start writing.
           </p>
-          <Link href="/signup" style={{
-            display: 'inline-flex', alignItems: 'center', gap: '8px',
-            background: 'linear-gradient(135deg, #0EA5E9, #0284C7)',
-            color: 'white', textDecoration: 'none',
-            fontWeight: '500', fontSize: '16px',
-            padding: '15px 36px', borderRadius: '14px',
-            boxShadow: '0 0 40px rgba(14, 165, 233,0.35), 0 8px 30px rgba(0,0,0,0.3)',
-            transition: 'all 0.25s',
-          }}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 0 60px rgba(14, 165, 233,0.55), 0 12px 40px rgba(0,0,0,0.4)'; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 0 40px rgba(14, 165, 233,0.35), 0 8px 30px rgba(0,0,0,0.3)'; }}>
-            Start Free Trial <ArrowRight size={16} />
+          
+          <Link href="/signup" className="btn-primary" style={{
+            display: 'inline-flex', background: 'linear-gradient(135deg, #C9A84C, #E8C97A)',
+            color: '#0A0F1E', padding: '20px 48px', borderRadius: '16px', fontSize: '18px', fontWeight: '700',
+            textDecoration: 'none', transition: 'all 0.2s'
+          }}>
+            Start for free — it takes 30 seconds
           </Link>
-        </div>
-      </section>
-
-      {/* ── FOOTER ── */}
-      <footer style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '48px 24px', position: 'relative', zIndex: 1 }}>
-        <div className="footer-layout" style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'linear-gradient(135deg, #0EA5E9, #0284C7)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Brain size={13} color="white" />
-            </div>
-            <span style={{ fontFamily: '"Cal Sans", sans-serif', fontSize: '16px', color: '#F0F4FF' }}>NoteGraph</span>
-            <span style={{ fontSize: '12px', color: 'rgba(240,244,255,0.25)', marginLeft: '4px' }}>— AI Second Brain</span>
+          
+          <div style={{ marginTop: '24px', color: 'rgba(244, 244, 255, 0.4)', fontSize: '14px' }}>
+            Join the people who stopped losing their best ideas.
           </div>
+        </section>
+      </main>
 
-          <div style={{ display: 'flex', gap: '28px', flexWrap: 'wrap' }}>
-            {[['Privacy', '/privacy'], ['Terms', '/terms'], ['Contact', 'mailto:hello@notegraph.online'], ['Demo', '/demo']].map(([label, href]) => (
-              <a key={label} href={href} style={{ fontSize: '13px', color: 'rgba(240,244,255,0.35)', textDecoration: 'none', transition: 'color 0.2s' }}
-                onMouseEnter={e => e.currentTarget.style.color = 'rgba(240,244,255,0.7)'}
-                onMouseLeave={e => e.currentTarget.style.color = 'rgba(240,244,255,0.35)'}>{label}</a>
-            ))}
+      <footer style={{ borderTop: '1px solid rgba(201, 168, 76, 0.1)', padding: '80px 24px 40px', background: '#0A0F1E' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '60px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '40px' }}>
+             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
+                  <div style={{ width: '30px', height: '30px' }}>
+                     <img src="/logo.png" alt="Logo" style={{ width: '135%', height: '135%', objectFit: 'contain', transform: 'translate(-3px, -3px)' }} />
+                  </div>
+                  <span style={{ fontFamily: "'Cal Sans', sans-serif", fontSize: '20px', color: '#F4F4FF' }}>NoteGraph</span>
+                </Link>
+                <p style={{ color: 'rgba(244, 244, 255, 0.4)', fontSize: '14px', lineHeight: '1.6' }}>Your AI second brain.</p>
+             </div>
+
+             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '40px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                   <div style={{ fontSize: '14px', fontWeight: '600', color: '#F4F4FF' }}>Product</div>
+                   <a href="#features" onClick={e => smoothScroll(e, 'features')} style={{ fontSize: '14px', color: 'rgba(244, 244, 255, 0.5)', textDecoration: 'none' }}>Features</a>
+                   <a href="#pricing" onClick={e => smoothScroll(e, 'pricing')} style={{ fontSize: '14px', color: 'rgba(244, 244, 255, 0.5)', textDecoration: 'none' }}>Pricing</a>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                   <div style={{ fontSize: '14px', fontWeight: '600', color: '#F4F4FF' }}>Legal</div>
+                   <Link href="/privacy" style={{ fontSize: '14px', color: 'rgba(244, 244, 255, 0.5)', textDecoration: 'none' }}>Privacy Policy</Link>
+                   <Link href="/terms" style={{ fontSize: '14px', color: 'rgba(244, 244, 255, 0.5)', textDecoration: 'none' }}>Terms of Service</Link>
+                </div>
+             </div>
+
+             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end' }}>
+                <div style={{ fontSize: '14px', color: '#C9A84C', fontWeight: '600' }}>notegraph.online</div>
+             </div>
           </div>
-
-          <p style={{ fontSize: '12px', color: 'rgba(240,244,255,0.2)' }}>© {new Date().getFullYear()} NoteGraph. All rights reserved.</p>
+          <div style={{ display: 'flex', justifyContent: 'center', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '40px' }}>
+             <p style={{ fontSize: '13px', color: 'rgba(244, 244, 255, 0.2)' }}>© {new Date().getFullYear()} NoteGraph. All rights reserved.</p>
+          </div>
         </div>
       </footer>
+
+      <style jsx global>{`
+        @font-face {
+          font-family: 'Cal Sans';
+          src: url('https://fonts.cdnfonts.com/s/77353/CalSans-SemiBold.woff') format('woff');
+        }
+
+        .gradient-text {
+          background: linear-gradient(135deg, #E8C97A, #C9A84C);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
+
+        .feature-card:hover {
+          background: #162040 !important;
+          border-color: rgba(201,168,76,0.3) !important;
+          transform: translateY(-4px);
+        }
+
+        .btn-primary:active {
+          background: #9A7A2E !important;
+        }
+
+        .nav-link:hover {
+          color: #C9A84C !important;
+        }
+
+        .app-mockup {
+          background: #0F1629;
+          border: 1px solid rgba(201,168,76,0.15);
+          border-radius: 12px;
+          overflow: hidden;
+          box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+          max-width: 1000px;
+          margin: 0 auto;
+        }
+        .mockup-bar {
+          background: #162040;
+          padding: 10px 16px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          border-bottom: 1px solid rgba(201,168,76,0.08);
+        }
+        .mockup-dots { display: flex; gap: 6px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; }
+        .dot-red { background: #FF5F57; }
+        .dot-yellow { background: #FEBC2E; }
+        .dot-green { background: #28C840; }
+        .mockup-url {
+          font-size: 11px;
+          color: rgba(244,244,255,0.25);
+          font-family: monospace;
+        }
+        .mockup-body { display: flex; }
+        .mockup-sidebar {
+          width: 140px;
+          padding: 12px;
+          border-right: 1px solid rgba(201,168,76,0.08);
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .mockup-nav-item {
+          padding: 6px 10px;
+          border-radius: 6px;
+          font-size: 11px;
+          color: rgba(244, 244, 255, 0.4);
+        }
+        .mockup-nav-item.active {
+          background: rgba(201,168,76,0.1);
+          color: #C9A84C;
+        }
+        .mockup-editor { flex: 1; padding: 20px; text-align: left; }
+        .mockup-title {
+          font-size: 16px;
+          font-weight: 600;
+          color: #F4F4FF;
+          margin-bottom: 12px;
+        }
+        .mockup-line {
+          height: 8px;
+          background: rgba(244,244,255,0.08);
+          border-radius: 4px;
+          margin-bottom: 8px;
+        }
+        .mockup-line.w-90 { width: 90%; }
+        .mockup-line.w-75 { width: 75%; }
+        .mockup-line.w-85 { width: 85%; }
+        .mockup-line.w-60 { width: 60%; }
+        .mockup-tags { display: flex; gap: 6px; margin-top: 16px; }
+        .mockup-tag {
+          font-size: 10px;
+          padding: 3px 8px;
+          border-radius: 20px;
+          background: rgba(201,168,76,0.1);
+          border: 1px solid rgba(201,168,76,0.2);
+          color: #C9A84C;
+        }
+        .galaxy-mockup {
+          background: #07070F;
+          border: 1px solid rgba(201,168,76,0.12);
+          border-radius: 12px;
+          overflow: hidden;
+          padding: 16px;
+        }
+
+        .step-number {
+          color: rgba(201,168,76,0.25);
+          font-size: 64px;
+          font-weight: 800;
+          line-height: 1;
+          margin-bottom: 10px;
+        }
+        
+        .lg-flex { display: flex; }
+        .lg-hidden { display: none; }
+        @media (max-width: 1024px) {
+          .lg-flex { display: none; }
+          .lg-hidden { display: block; }
+          .mockup-sidebar { display: none; }
+        }
+      `}</style>
     </div>
   );
 }

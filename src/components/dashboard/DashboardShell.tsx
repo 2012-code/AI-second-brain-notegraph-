@@ -108,7 +108,7 @@ export default function DashboardShell({ children, notes, selectedNote, onNotesC
                 {isMobile && sidebarOpen && (
                     <button
                         onClick={() => setSidebarOpen(false)}
-                        className="absolute top-4 -right-12 p-2 text-white bg-[var(--bg-surface)] rounded-lg border border-[var(--border-subtle)]"
+                        className="absolute top-4 right-4 p-2 text-white bg-[var(--bg-surface)] rounded-lg border border-[var(--border-subtle)] z-[60]"
                     >
                         <X size={16} />
                     </button>
@@ -118,13 +118,13 @@ export default function DashboardShell({ children, notes, selectedNote, onNotesC
             {/* AI Chat Panel Container — fixed right */}
             <div
                 className={`fixed inset-y-0 right-0 z-50 transition-transform duration-300 ease-in-out ${aiPanelOpen ? 'translate-x-0' : 'translate-x-full'} ${isExpanded ? 'hidden' : ''}`}
-                style={{ width: isMobile || isTablet ? '100%' : '300px', maxWidth: '300px' }}
+                style={{ width: isMobile || isTablet ? '100%' : '300px', maxWidth: isMobile ? '100%' : '300px' }}
             >
                 <AIChatPanel currentNote={selectedNote} notes={notes} />
                 {(isMobile || isTablet) && aiPanelOpen && (
                     <button
                         onClick={() => setAiPanelOpen(false)}
-                        className="absolute top-4 left-4 p-2 text-white bg-[var(--bg-surface)] rounded-lg border border-[var(--border-subtle)] z-50"
+                        className="absolute top-4 right-4 p-2 text-white bg-[var(--bg-surface)] rounded-lg border border-[var(--border-subtle)] z-[60]"
                     >
                         <X size={16} />
                     </button>
