@@ -1,8 +1,9 @@
-import Groq from 'groq-sdk';
+
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export const maxDuration = 30; // Allow up to 30s on Vercel Pro, 10s on Hobby
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   let userId: string | null = null;
@@ -62,9 +63,6 @@ export async function POST(req: Request) {
         .join('\n\n---\n\n');
     }
 
-    // Step 5: Call Groq with a smaller, faster model for reliability
-    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-
     const systemPrompt = contextText
       ? `You are a helpful AI assistant for a note-taking app called Notegraph. 
 You have access to the user's notes below. Answer questions about their notes, find connections between ideas, and help them think.
@@ -83,26 +81,49 @@ Be friendly and conversational.`;
 
     let response: string | undefined;
     try {
-      const completion = await groq.chat.completions.create({
-        messages: msgs as any,
-        model: 'llama-3.3-70b-versatile',
-        max_tokens: 500,
-        temperature: 0.7,
+      const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'llama-3.1-8b-instant',
+          messages: msgs,
+          max_tokens: 500,
+          temperature: 0.7,
+        }),
+        cache: 'no-store'
       });
+
+      if (!groqResponse.ok) {
+        let errorData: any = {};
+        try {
+          errorData = await groqResponse.json();
+        } catch {
+          errorData.error = { message: groqResponse.statusText };
+        }
+        const errMsg = errorData.error?.message || 'Unknown error response from Groq';
+        const errStatus = groqResponse.status;
+        console.error('Groq API error:', { message: errMsg, status: errStatus });
+        
+        if (errStatus === 401) {
+          return Response.json({ response: 'Invalid API key. Please check your GROQ_API_KEY.' });
+        }
+        if (errStatus === 429) {
+          return Response.json({ response: 'Too many requests. Please wait a moment and try again.' });
+        }
+        if (errStatus === 400) {
+          return Response.json({ response: `AI model error: ${errMsg}` });
+        }
+        return Response.json({ response: `AI service error: ${errMsg}` });
+      }
+
+      const completion = await groqResponse.json();
       response = completion.choices[0]?.message?.content?.trim();
-    } catch (groqErr: any) {
-      console.error('Groq API error:', { message: groqErr.message, status: groqErr.status, code: groqErr.code });
-      
-      if (groqErr.status === 401) {
-        return Response.json({ response: 'Invalid API key. Please check your GROQ_API_KEY.' });
-      }
-      if (groqErr.status === 429) {
-        return Response.json({ response: 'Too many requests. Please wait a moment and try again.' });
-      }
-      if (groqErr.status === 400) {
-        return Response.json({ response: `AI model error: ${groqErr.message}` });
-      }
-      return Response.json({ response: `AI service error: ${groqErr.message || 'Could not reach AI service.'}` });
+    } catch (fetchErr: any) {
+      console.error('Groq fetch execution error:', fetchErr);
+      return Response.json({ response: `AI service network error: ${fetchErr.message || 'Could not connect.'}` });
     }
 
     if (!response) {
