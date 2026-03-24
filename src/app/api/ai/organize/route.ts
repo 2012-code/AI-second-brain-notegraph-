@@ -17,16 +17,25 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. AI Call using unified helper with JSON Mode enabled
-    const prompt = `You are a professional note organizer. Analyze this note and return a valid JSON object.
-{
-  "title": "concise title max 8 words",
-  "tags": ["tag1", "tag2", "tag3"],
-  "category": "one of: Work, Personal, Ideas, Research, Learning, Creative",
-  "summary": "one sentence summary",
-  "organizedContent": "rewrite the note as clean HTML using these tags only: <h2> for main sections, <h3> for subsections, <p> for paragraphs, <ul><li> for bullet lists, <ol><li> for numbered lists, <strong> for emphasis. Do NOT use markdown asterisks or hyphens. Use only valid HTML tags."
-}
+    const prompt = `You are a professional note organizer. Analyze the provided note and transform it into a beautifully structured, clean document. 
 
-CRITICAL LANGUAGE INSTRUCTION: Identify the language of the Note and respond in that same language. BUT if the language is English or unclear, respond in English. Do NOT default to Arabic unless the note is clearly in Arabic.
+Instructions:
+1. Organize the content into logical sections with clear, descriptive headings (<h2>).
+2. Use subsections (<h3>) if the note is complex.
+3. Use bullet points (<ul><li>) or numbered lists (<ol><li>) for itemized information.
+4. Use bold (<strong>) for key terms or important phrases.
+5. Improve the flow and grammar while preserving all original facts and details.
+6. Do NOT mention the language of the note or add any meta-commentary.
+7. Return the result in the same language as the note (default to English if unclear).
+
+Return a valid JSON object:
+{
+  "title": "A compelling, concise title (max 8 words)",
+  "tags": ["3-5 relevant lowercase tags"],
+  "category": "One of: Work, Personal, Ideas, Research, Learning, Creative",
+  "summary": "A high-level 1-sentence summary",
+  "organizedContent": "The rewritten note as clean HTML using only: <h2>, <h3>, <p>, <ul>, <ol>, <li>, <strong>. Do NOT use markdown symbols."
+}
 
 Original note:
 ${content}`;

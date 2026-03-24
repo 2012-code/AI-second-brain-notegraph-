@@ -13,9 +13,9 @@ export async function POST(request: NextRequest) {
 
         const response = await chat([{
             role: 'user',
-            content: `Summarize the following note in 2-3 sentences. Focus on the key insights and main points. Be concise and clear.
-
-CRITICAL LANGUAGE INSTRUCTION: Identify the language of the Note and respond in that same language. BUT if the language is English or unclear, respond in English. Do NOT default to Arabic unless the note is clearly in Arabic.
+            content: `Provide a clear, high-level summary of the following note in 2-3 sentences. 
+Focus on the key insights and main points. Do NOT mention the language of the note or start with "This note is about...". 
+Write the summary directly in the same language as the note (default to English if unclear).
 
 Note:
 ${content.slice(0, 3000)}`,

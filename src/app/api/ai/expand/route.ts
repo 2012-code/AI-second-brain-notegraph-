@@ -13,9 +13,9 @@ export async function POST(request: NextRequest) {
 
         const response = await chat([{
             role: 'user',
-            content: `Expand this note into a more detailed, well-structured version. Add more depth, examples, and clarity while keeping the original meaning. Return only the expanded text, nothing else.
-
-CRITICAL LANGUAGE INSTRUCTION: Identify the language of the Note and respond in that same language. BUT if the language is English or unclear, respond in English. Do NOT default to Arabic unless the note is clearly in Arabic.
+            content: `Expand this note into a more detailed, well-structured, and professional version. 
+Add depth, specific examples, and better clarity while strictly preserving the original meaning. 
+Do NOT mention the language of the note. Write directly in the same language as the note (default to English if unclear).
 
 Note:
 ${content.slice(0, 3000)}`,
