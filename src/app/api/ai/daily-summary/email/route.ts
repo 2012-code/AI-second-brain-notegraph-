@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
         const firstName = fullName.split(' ')[0];
 
         const { error } = await resend.emails.send({
-            from: 'Cerebro Digest <onboarding@resend.dev>',
+            from: process.env.RESEND_FROM_EMAIL || 'Cerebro Digest <onboarding@resend.dev>',
             to: user.email,
             subject: `🧠 ${firstName}'s Daily Cerebro Summary`,
             html: `

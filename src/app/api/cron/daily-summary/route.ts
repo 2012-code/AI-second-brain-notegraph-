@@ -162,7 +162,7 @@ CRITICAL LANGUAGE INSTRUCTION:
             const firstName = fullName.split(' ')[0];
 
             await resend.emails.send({
-                from: 'Cerebro <onboarding@resend.dev>',
+                from: process.env.RESEND_FROM_EMAIL || 'Cerebro <onboarding@resend.dev>',
                 to: user.email,
                 subject: `🧠 ${firstName}'s Daily Cerebro Summary`,
                 html: `
