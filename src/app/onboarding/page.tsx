@@ -81,7 +81,7 @@ export default function OnboardingPage() {
 
     return (
         <div className="min-h-screen flex items-center justify-center p-4"
-            style={{ background: 'radial-gradient(ellipse at top, #1a0a3a 0%, #0A0A0F 60%)' }}>
+            style={{ background: 'radial-gradient(ellipse at top, #0B101E 0%, #0A0A0F 60%)' }}>
             {/* Logo */}
             <div className="absolute top-6 left-6 flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center"
