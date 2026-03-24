@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
             role: 'user',
             content: `Expand this note into a more detailed, well-structured version. Add more depth, examples, and clarity while keeping the original meaning. Return only the expanded text, nothing else.
 
-CRITICAL INSTRUCTION: You MUST detect the language of the Note (e.g., Arabic). All your generated text MUST be fluent in that exact same language.
+CRITICAL LANGUAGE INSTRUCTION: Identify the language of the Note and respond in that same language. BUT if the language is English or unclear, respond in English. Do NOT default to Arabic unless the note is clearly in Arabic.
 
 Note:
 ${content.slice(0, 3000)}`,

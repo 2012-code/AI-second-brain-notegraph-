@@ -1,17 +1,7 @@
-import Groq from 'groq-sdk';
-
-export const groq = new Groq({
-    apiKey: process.env.GROQ_API_KEY,
-});
 
 export async function generateEmbedding(text: string): Promise<number[]> {
     // Supabase's gte-small produces 384-dim embeddings
-    // Since Groq doesn't provide embeddings, we use a compatible API
-    // For now, we'll use a deterministic hash-based approach for the demo
-    // Replace with real embeddings API when integrating full production
-
     try {
-        // Try to use the Supabase Edge Function for embeddings
         const response = await fetch(
             `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-embedding`,
             {
@@ -28,13 +18,10 @@ export async function generateEmbedding(text: string): Promise<number[]> {
             const data = await response.json();
             return data.embedding;
         }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (e: unknown) {
         // Fall back to a pseudo-embedding if edge function not available
     }
 
-    // Fallback: create a simple deterministic vector from text
-    // (not semantically meaningful, but prevents app crashes)
     return createPseudoEmbedding(text);
 }
 
@@ -50,7 +37,6 @@ function createPseudoEmbedding(text: string): number[] {
         }
     }
 
-    // Normalize
     const magnitude = Math.sqrt(vector.reduce((sum, v) => sum + v * v, 0)) || 1;
     return vector.map(v => v / magnitude);
 }
@@ -59,12 +45,34 @@ export async function chat(
     messages: Array<{ role: 'user' | 'assistant' | 'system'; content: string }>,
     options?: { model?: string; maxTokens?: number }
 ) {
-    const completion = await groq.chat.completions.create({
-        model: options?.model || 'llama-3.3-70b-versatile',
-        messages,
-        max_tokens: options?.maxTokens || 1024,
-        temperature: 0.7,
-    });
+    const model = options?.model || 'llama-3.1-8b-instant';
+    
+    try {
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                model,
+                messages,
+                max_tokens: options?.maxTokens || 1024,
+                temperature: 0.7,
+            }),
+            cache: 'no-store'
+        });
 
-    return completion.choices[0]?.message?.content || '';
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            console.error('Groq API Error:', error);
+            throw new Error(error.error?.message || 'Failed to call Groq API');
+        }
+
+        const data = await response.json();
+        return data.choices[0]?.message?.content || '';
+    } catch (err: any) {
+        console.error('Groq connection error:', err);
+        throw err;
+    }
 }

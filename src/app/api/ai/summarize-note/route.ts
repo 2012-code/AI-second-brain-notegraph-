@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
             role: 'user',
             content: `Summarize the following note in 2-3 sentences. Focus on the key insights and main points. Be concise and clear.
 
-CRITICAL INSTRUCTION: You MUST detect the language of the Note (e.g., Arabic). Your summary MUST be fluent in that exact same language.
+CRITICAL LANGUAGE INSTRUCTION: Identify the language of the Note and respond in that same language. BUT if the language is English or unclear, respond in English. Do NOT default to Arabic unless the note is clearly in Arabic.
 
 Note:
 ${content.slice(0, 3000)}`,
