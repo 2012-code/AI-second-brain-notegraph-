@@ -17,10 +17,12 @@ export async function POST(request: NextRequest) {
         const fullName = user.user_metadata?.full_name || 'there';
         const firstName = fullName.split(' ')[0];
 
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://notegraph.vercel.app'));
+
         const { error } = await resend.emails.send({
-            from: process.env.RESEND_FROM_EMAIL || 'Cerebro Digest <onboarding@resend.dev>',
+            from: process.env.RESEND_FROM_EMAIL || 'NoteGraph Digest <onboarding@resend.dev>',
             to: user.email,
-            subject: `🧠 ${firstName}'s Daily Cerebro Summary`,
+            subject: `🧠 ${firstName}'s Daily NoteGraph Summary`,
             html: `
         <div style="font-family: 'Inter', -apple-system, sans-serif; max-width: 600px; margin: 0 auto; background: #09090b; color: #fafafa; padding: 48px 32px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
           <!-- Header -->
@@ -28,7 +30,7 @@ export async function POST(request: NextRequest) {
             <div style="width: 56px; height: 56px; margin: 0 auto 20px; background: linear-gradient(135deg, #3b82f6, #8b5cf6, #d946ef); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 28px; box-shadow: 0 10px 25px -5px rgba(139, 92, 246, 0.4), inset 0 2px 4px rgba(255,255,255,0.3);">
               🧠
             </div>
-            <h1 style="font-size: 28px; font-weight: 800; margin: 0; padding-bottom: 8px; background: linear-gradient(to right, #ffffff, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.02em;">Cerebro Insights</h1>
+            <h1 style="font-size: 28px; font-weight: 800; margin: 0; padding-bottom: 8px; background: linear-gradient(to right, #ffffff, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.02em;">NoteGraph Insights</h1>
             <p style="color: #a1a1aa; font-size: 15px; margin: 0; font-weight: 500;">Exclusive Knowledge Digest for ${firstName}</p>
           </div>
           
@@ -42,13 +44,13 @@ ${summary}
           
           <!-- CTA -->
           <div style="margin-top: 48px; text-align: center;">
-            <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://notegraph.online'}/dashboard" style="display: inline-block; background: linear-gradient(135deg, #fafafa, #d4d4d8); color: #09090b; padding: 16px 36px; border-radius: 14px; text-decoration: none; font-weight: 600; font-size: 15px; box-shadow: 0 10px 25px -5px rgba(255,255,255,0.15); transition: all 0.2s;">View Your Dashboard</a>
+            <a href="${appUrl}/dashboard" style="display: inline-block; background: linear-gradient(135deg, #fafafa, #d4d4d8); color: #09090b; padding: 16px 36px; border-radius: 14px; text-decoration: none; font-weight: 600; font-size: 15px; box-shadow: 0 10px 25px -5px rgba(255,255,255,0.15); transition: all 0.2s;">View Your Dashboard</a>
           </div>
           
           <!-- Footer -->
           <div style="margin-top: 48px; padding-top: 32px; border-top: 1px solid rgba(255,255,255,0.05); text-align: center;">
             <p style="color: #71717a; font-size: 13px; margin: 0; font-weight: 500;">
-              Generated on-demand by Cerebro AI using your recent activity.
+              Generated on-demand by NoteGraph AI using your recent activity.
             </p>
           </div>
         </div>

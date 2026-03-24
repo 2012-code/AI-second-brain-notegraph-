@@ -161,25 +161,27 @@ CRITICAL LANGUAGE INSTRUCTION:
             const fullName = profile.full_name || 'there';
             const firstName = fullName.split(' ')[0];
 
+            const appUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://notegraph.vercel.app'));
+
             await resend.emails.send({
-                from: process.env.RESEND_FROM_EMAIL || 'Cerebro <onboarding@resend.dev>',
+                from: process.env.RESEND_FROM_EMAIL || 'NoteGraph <onboarding@resend.dev>',
                 to: user.email,
-                subject: `🧠 ${firstName}'s Daily Cerebro Summary`,
+                subject: `🧠 ${firstName}'s Daily NoteGraph Summary`,
                 html: `
           <div style="font-family: Inter, sans-serif; max-width: 600px; margin: 0 auto; background: #0A0A0F; color: #F0F0FF; padding: 40px 24px; border-radius: 16px;">
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 32px;">
               <div style="width: 36px; height: 36px; background: linear-gradient(135deg, #0EA5E9, #06B6D4); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px;">🧠</div>
-              <span style="font-size: 20px; font-weight: 600;">Cerebro Daily</span>
+              <span style="font-size: 20px; font-weight: 600;">NoteGraph Daily</span>
             </div>
             <h2 style="color: #F0F0FF; margin-bottom: 16px;">Your Knowledge Summary, ${firstName}</h2>
             <div style="background: #111118; border: 1px solid #2A2A3A; border-left: 3px solid #06B6D4; border-radius: 12px; padding: 20px; white-space: pre-wrap; line-height: 1.7; color: #D0D0EE;">
 ${summary}
             </div>
             <div style="margin-top: 24px; text-align: center;">
-              <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard" style="display: inline-block; background: linear-gradient(135deg, #0EA5E9, #0369A1); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 500;">Open Cerebro →</a>
+              <a href="${appUrl}/dashboard" style="display: inline-block; background: linear-gradient(135deg, #0EA5E9, #0369A1); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 500;">Open NoteGraph →</a>
             </div>
             <p style="text-align: center; color: #606075; font-size: 12px; margin-top: 24px;">
-              <a href="${process.env.NEXT_PUBLIC_APP_URL}/settings" style="color: #606075;">Manage email preferences</a>
+              <a href="${appUrl}/settings" style="color: #606075;">Manage email preferences</a>
             </p>
           </div>
         `,
