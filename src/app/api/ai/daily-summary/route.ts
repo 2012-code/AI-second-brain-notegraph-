@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
             `Title: ${n.title || 'Untitled'}\nCategory: ${n.category || 'General'}\nTags: ${(n.tags || []).join(', ')}\nContent: ${(n.content || '').replace(/<[^>]+>/g, '').slice(0, 200)}`
         ).join('\n---\n');
 
-        const prompt = `You are a personal knowledge coach. The user has ${recentNotes.length} notes from the past week. Write a thoughtful, personal summary.
+        const prompt = `You are a personal knowledge coach. Write a thoughtful, personal summary.
 
 Write a summary with:
 1. "Yesterday's Captures" — what they added in 2-3 sentences
@@ -52,13 +52,7 @@ Write a summary with:
 
 Under 100 words. Friendly, smart, personal tone.
 
-CRITICAL LANGUAGE INSTRUCTION:
-1. Analyze the language of the provided notes.
-2. You MUST write the summary in the dominant language of the notes.
-3. If the notes are mostly in Arabic, write the ENTIRE summary in Arabic.
-4. If the notes are mostly in English, write the ENTIRE summary in English.
-5. YOU ARE STRICTLY FORBIDDEN from generating Chinese or Korean characters under any circumstances.
-6. DO NOT output ANY conversational filler, meta-commentary, or introductory text. Output ONLY the final summary text.
+CRITICAL LANGUAGE INSTRUCTION: Identify the language of the Note and respond in that same language. BUT if the language is English or unclear, respond in English. Do NOT default to Arabic unless the note is clearly in Arabic. Do NOT output ANY meta-commentary.
 
 User's notes from the past 7 days:
 ${notesText}`;

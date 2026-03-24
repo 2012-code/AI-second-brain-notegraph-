@@ -12,13 +12,9 @@ export async function POST(request: NextRequest) {
     const authHeader = request.headers.get('authorization');
     const expectedSecret = (process.env.CRON_SECRET || '').trim();
     
-    console.log('[cron] Authorization header received:', authHeader ? 'present' : 'missing');
-    
     if (!authHeader || authHeader !== `Bearer ${expectedSecret}`) {
-        console.log(`[cron] Unauthorized - header mismatch. Expected: Bearer ${expectedSecret?.slice(0,5)}... Received: ${authHeader?.slice(0,12)}...`);
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
 
     const admin = createAdminClient();
 
@@ -28,28 +24,21 @@ export async function POST(request: NextRequest) {
         .select('id, full_name, summary_enabled, summary_time, timezone')
         .eq('summary_enabled', true);
 
-    console.log('[cron] Profiles with summary_enabled=true:', profiles?.length ?? 0);
     if (profilesError) {
         console.error('[cron] Error fetching profiles:', profilesError.message);
         return NextResponse.json({ error: profilesError.message }, { status: 500 });
     }
 
     if (!profiles?.length) {
-        console.log('[cron] No profiles found with summary_enabled=true in database.');
         return NextResponse.json({ sent: 0, reason: 'no_profiles_enabled' });
     }
 
-
     let sent = 0;
 
-    await Promise.allSettled(profiles.map(async (profile) => {
+    // Use a sequential approach or at least more controlled parallel to prevent DB race conditions
+    for (const profile of profiles) {
         try {
-            console.log(`[cron] Checking user ${profile.id} | summary_time=${profile.summary_time} | timezone=${profile.timezone}`);
-
-            if (!profile.summary_time) {
-                console.log(`[cron] Skipping ${profile.id}: no summary_time set`);
-                return;
-            }
+            if (!profile.summary_time) continue;
             
             const tz = profile.timezone || 'UTC';
             const currentUtc = new Date();
@@ -72,15 +61,10 @@ export async function POST(request: NextRequest) {
             const currentTotalMinutes = currentLocalHour * 60 + currentLocalMinute;
             const targetTotalMinutes = targetHour * 60 + targetMinute;
 
-            console.log(`[cron] User ${profile.id}: local time=${localTimeStr} (${tz}), target=${targetHour}:${String(targetMinute).padStart(2,'0')}`);
-            
             // Wait until the target time has arrived or passed for today
-            if (currentTotalMinutes < targetTotalMinutes) {
-                console.log(`[cron] Skipping ${profile.id}: target time not reached today (${currentLocalHour}:${currentLocalMinute} < ${targetHour}:${targetMinute})`);
-                return;
-            }
+            if (currentTotalMinutes < targetTotalMinutes) continue;
 
-            // Ensure we haven't already sent a summary in the last 20 hours
+            // 1. DUPLICATE PREVENTION CHECK (Same calendar day in user's timezone)
             const twentyHoursAgo = new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString();
             const { data: sentRecently } = await admin
                 .from('daily_summaries')
@@ -91,16 +75,24 @@ export async function POST(request: NextRequest) {
 
             if (sentRecently && sentRecently.length > 0) {
                 console.log(`[cron] Skipping ${profile.id}: already sent in last 20h`);
-                return;
+                continue;
+            }
+
+            // 2. PRE-EMPTIVE LOCK (Insert record before sending)
+            const { error: lockError } = await admin.from('daily_summaries').insert({
+                user_id: profile.id,
+                summary_text: 'PENDING_SEND',
+                notes_included: [],
+            });
+
+            if (lockError) {
+                console.log(`[cron] Skipping ${profile.id}: duplicate prevention lock triggered`);
+                continue;
             }
 
             // Get user email
             const { data: { user } } = await admin.auth.admin.getUserById(profile.id);
-            if (!user?.email) {
-                console.log(`[cron] Skipping ${profile.id}: no email found`);
-                return;
-            }
-            console.log(`[cron] Sending email to ${user.email}`);
+            if (!user?.email) continue;
 
             // Get notes from last 24h
             const yesterday = new Date();
@@ -113,9 +105,13 @@ export async function POST(request: NextRequest) {
                 .gte('created_at', yesterday.toISOString())
                 .limit(10);
 
-            if (!recentNotes?.length) return;
+            if (!recentNotes?.length) {
+                // Remove the lock if no notes to send
+                await admin.from('daily_summaries').delete().eq('user_id', profile.id).eq('summary_text', 'PENDING_SEND');
+                continue;
+            }
 
-            // Get top topics across all notes
+            // Get top topics
             const { data: allNotes } = await admin
                 .from('notes')
                 .select('key_topics, tags')
@@ -131,7 +127,7 @@ export async function POST(request: NextRequest) {
             const topTopics = Object.entries(topicsCount).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([t]) => t);
 
             const notesText = recentNotes
-                .map(n => `- ${n.title || 'Untitled'}: ${n.content?.slice(0, 200)}`)
+                .map(n => `- ${n.title || 'Untitled'}: ${n.content?.slice(0, 200).replace(/<[^>]+>/g, '')}`)
                 .join('\n');
 
             const prompt = `You are a personal knowledge assistant. Write a friendly daily summary.
@@ -149,18 +145,11 @@ Write a summary with:
 
 Under 200 words. Friendly, smart, personal tone.
 
-CRITICAL LANGUAGE INSTRUCTION:
-1. Analyze the language of the provided notes.
-2. If the notes contain ANY Arabic text, you MUST write the ENTIRE email summary in Arabic.
-3. If the notes are in English, write in English.
-4. YOU ARE STRICTLY FORBIDDEN from generating Chinese or Korean characters under any circumstances.
-5. DO NOT output ANY conversational filler, meta-commentary, or introductory text (e.g., 'Since the notes contain Arabic...'). Output ONLY the final summary text.`;
+CRITICAL LANGUAGE INSTRUCTION: Identify the language of the Note and respond in that same language. BUT if the language is English or unclear, respond in English. Do NOT default to Arabic unless the note is clearly in Arabic. Do NOT mention the language.`;
 
             const summary = await chat([{ role: 'user', content: prompt }], { maxTokens: 400 });
 
-            const fullName = profile.full_name || 'there';
-            const firstName = fullName.split(' ')[0];
-
+            const firstName = (profile.full_name || 'there').split(' ')[0];
             const appUrl = 'https://notegraph.online';
 
             await resend.emails.send({
@@ -187,23 +176,21 @@ ${summary}
         `,
             });
 
-            // Save to daily_summaries
-            await admin.from('daily_summaries').insert({
-                user_id: profile.id,
-                summary_text: summary,
-                notes_included: recentNotes.map(() => ''),
-            });
+            // Update the lock with the final summary
+            await admin.from('daily_summaries')
+                .update({ summary_text: summary })
+                .eq('user_id', profile.id)
+                .eq('summary_text', 'PENDING_SEND');
 
             sent++;
         } catch (e) {
             console.error(`Failed for user ${profile.id}:`, e);
         }
-    }));
+    }
 
     return NextResponse.json({ sent });
 }
 
-// GET for on-demand generation
 export async function GET(request: NextRequest) {
     try {
         const supabase = await (await import('@/lib/supabase/server')).createClient();
@@ -221,12 +208,12 @@ export async function GET(request: NextRequest) {
             .gte('created_at', yesterday.toISOString())
             .limit(15);
 
-        if (!notes?.length) return NextResponse.json({ summary: "You haven't added any notes this week yet. Start capturing your ideas!" });
+        if (!notes?.length) return NextResponse.json({ summary: "Capture some notes to see your summary!" });
 
         const notesText = notes.map(n => `- ${n.title || 'Untitled'}: ${n.content?.slice(0, 150)}`).join('\n');
         const summary = await chat([{
             role: 'user',
-            content: `Write a brief, personal, friendly summary of these recent notes in 3-4 sentences. Highlight patterns and key themes.\n\n${notesText}`,
+            content: `Write a brief, personal summary of these recent notes in 3-4 sentences. Highlight patterns.\n\n${notesText}`,
         }], { maxTokens: 300 });
 
         return NextResponse.json({ summary });
