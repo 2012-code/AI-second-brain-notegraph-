@@ -18,43 +18,81 @@ export async function POST(request: NextRequest) {
         const firstName = fullName.split(' ')[0];
 
         const appUrl = 'https://notegraph.online';
+        const fromEmail = process.env.RESEND_FROM_EMAIL || 'NoteGraph <noreply@notegraph.online>';
 
         const { error } = await resend.emails.send({
-            from: process.env.RESEND_FROM_EMAIL || 'NoteGraph Digest <noreply@notegraph.online>',
+            from: fromEmail,
             to: user.email,
-            subject: `🧠 ${firstName}'s Daily NoteGraph Summary`,
-            html: `
-        <div style="font-family: 'Inter', -apple-system, sans-serif; max-width: 600px; margin: 0 auto; background: #09090b; color: #fafafa; padding: 48px 32px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
+            replyTo: 'noreply@notegraph.online',
+            subject: `Your Daily NoteGraph Summary - ${firstName}`,
+            headers: {
+                'List-Unsubscribe': `<${appUrl}/settings>`,
+                'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+                'X-Entity-Ref-ID': user.id,
+            },
+            html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your NoteGraph Summary</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background:#09090b;border-radius:16px;overflow:hidden;border:1px solid #27272a;">
           <!-- Header -->
-          <div style="text-align: center; margin-bottom: 40px;">
-            <div style="width: 56px; height: 56px; margin: 0 auto 20px; background: linear-gradient(135deg, #3b82f6, #8b5cf6, #d946ef); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 28px; box-shadow: 0 10px 25px -5px rgba(139, 92, 246, 0.4), inset 0 2px 4px rgba(255,255,255,0.3);">
-              🧠
-            </div>
-            <h1 style="font-size: 28px; font-weight: 800; margin: 0; padding-bottom: 8px; background: linear-gradient(to right, #ffffff, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.02em;">NoteGraph Insights</h1>
-            <p style="color: #a1a1aa; font-size: 15px; margin: 0; font-weight: 500;">Exclusive Knowledge Digest for ${firstName}</p>
-          </div>
-          
-          <!-- Body -->
-          <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; padding: 32px; position: relative; overflow: hidden;">
-            <div style="position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: linear-gradient(to bottom, #3b82f6, #d946ef);"></div>
-            <div style="white-space: pre-wrap; line-height: 1.8; color: #e4e4e7; font-size: 16px; font-weight: 400;">
+          <tr>
+            <td style="padding:32px 40px 24px;border-bottom:1px solid #27272a;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td>
+                    <span style="font-size:20px;font-weight:700;color:#f4f4f5;">NoteGraph</span>
+                  </td>
+                  <td align="right">
+                    <span style="font-size:12px;color:#71717a;">Daily Summary</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <!-- Greeting -->
+          <tr>
+            <td style="padding:32px 40px 0;">
+              <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#fafafa;">Hi ${firstName},</h1>
+              <p style="margin:0;font-size:14px;color:#a1a1aa;">Here is your personalized knowledge digest for today.</p>
+            </td>
+          </tr>
+          <!-- Summary body -->
+          <tr>
+            <td style="padding:24px 40px;">
+              <div style="background:#18181b;border-left:3px solid #0ea5e9;border-radius:8px;padding:24px;white-space:pre-wrap;line-height:1.8;color:#e4e4e7;font-size:15px;">
 ${summary}
-            </div>
-          </div>
-          
+              </div>
+            </td>
+          </tr>
           <!-- CTA -->
-          <div style="margin-top: 48px; text-align: center;">
-            <a href="${appUrl}/dashboard" style="display: inline-block; background: linear-gradient(135deg, #fafafa, #d4d4d8); color: #09090b; padding: 16px 36px; border-radius: 14px; text-decoration: none; font-weight: 600; font-size: 15px; box-shadow: 0 10px 25px -5px rgba(255,255,255,0.15); transition: all 0.2s;">View Your Dashboard</a>
-          </div>
-          
+          <tr>
+            <td style="padding:0 40px 32px;text-align:center;">
+              <a href="${appUrl}/dashboard" style="display:inline-block;background:#0ea5e9;color:#ffffff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;">View Dashboard</a>
+            </td>
+          </tr>
           <!-- Footer -->
-          <div style="margin-top: 48px; padding-top: 32px; border-top: 1px solid rgba(255,255,255,0.05); text-align: center;">
-            <p style="color: #71717a; font-size: 13px; margin: 0; font-weight: 500;">
-              Generated on-demand by NoteGraph AI using your recent activity.
-            </p>
-          </div>
-        </div>
-      `,
+          <tr>
+            <td style="padding:24px 40px;border-top:1px solid #27272a;text-align:center;">
+              <p style="margin:0;font-size:12px;color:#52525b;">Generated by NoteGraph AI from your recent notes.</p>
+              <p style="margin:8px 0 0;font-size:12px;color:#52525b;">
+                <a href="${appUrl}/settings" style="color:#71717a;">Manage email preferences</a>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`,
         });
 
         if (error) {
