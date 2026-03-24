@@ -223,12 +223,37 @@ export default function SettingsPage() {
                                             <span className="text-xs text-text-muted">$8.00 / month</span>
                                         </div>
                                     </div>
-                                    <span className={`text-[11px] px-3 py-1 rounded-full font-bold tracking-wide uppercase ${subscription?.status === 'active' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20' :
-                                        subscription?.status === 'trialing' ? 'bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/20' :
-                                            'bg-red-500/20 text-red-400 border border-red-500/20'
-                                        }`}>
-                                        {subscription?.status || 'Unknown'}
-                                    </span>
+                                    {(() => {
+                                        const isOwner = email === 'abdallahabdelnbii467@gmail.com';
+                                        if (isOwner) {
+                                            return (
+                                                <span className="text-[11px] px-3 py-1 rounded-full font-bold tracking-wide uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/20">
+                                                    Lifetime Pro
+                                                </span>
+                                            );
+                                        }
+
+                                        const status = subscription?.status;
+                                        if (status === 'active') {
+                                            return <span className="text-[11px] px-3 py-1 rounded-full font-bold tracking-wide uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/20">Active Pro</span>;
+                                        }
+                                        if (status === 'trialing') {
+                                            return <span className="text-[11px] px-3 py-1 rounded-full font-bold tracking-wide uppercase bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/20">Free Trial</span>;
+                                        }
+
+                                        // Fallback logic matching layout.tsx
+                                        const createdAt = profile?.created_at;
+                                        if (createdAt) {
+                                            const trialEndDate = new Date(createdAt);
+                                            trialEndDate.setDate(trialEndDate.getDate() + 7);
+                                            const isTrialExpired = trialEndDate < new Date();
+                                            if (!isTrialExpired) {
+                                                return <span className="text-[11px] px-3 py-1 rounded-full font-bold tracking-wide uppercase bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/20">Free Trial</span>;
+                                            }
+                                        }
+
+                                        return <span className="text-[11px] px-3 py-1 rounded-full font-bold tracking-wide uppercase bg-red-500/20 text-red-400 border border-red-500/20">Trial Expired</span>;
+                                    })()}
                                 </div>
                                 <div className="space-y-1 relative z-10">
                                     {subscription?.trial_ends_at && subscription.status === 'trialing' && (
