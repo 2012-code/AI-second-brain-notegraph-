@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'react-hot-toast';
 import { Mail, Lock, Eye, EyeOff, Sparkles } from 'lucide-react';
+import GoogleAuthButton from '@/components/GoogleAuthButton';
 
 export default function LoginPage() {
     const router = useRouter();
@@ -45,6 +46,17 @@ export default function LoginPage() {
                 </div>
                 <h1 className="auth-heading">Welcome back</h1>
                 <p className="auth-subheading">Sign in to continue to your mind.</p>
+            </div>
+
+            <GoogleAuthButton className="mb-6" />
+
+            <div className="relative mb-6">
+                <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-slate-800/60" />
+                </div>
+                <div className="relative flex justify-center text-xs">
+                    <span className="bg-[#0b101e] px-2 text-slate-500 uppercase opacity-75">Or continue with email</span>
+                </div>
             </div>
 
             <form onSubmit={handleLogin}>
