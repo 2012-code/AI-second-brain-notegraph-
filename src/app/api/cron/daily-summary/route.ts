@@ -161,7 +161,7 @@ CRITICAL LANGUAGE INSTRUCTION:
             const fullName = profile.full_name || 'there';
             const firstName = fullName.split(' ')[0];
 
-            const appUrl = process.env.NEXT_PUBLIC_APP_URL?.includes('localhost') ? 'https://notegraph.online' : (process.env.NEXT_PUBLIC_APP_URL || 'https://notegraph.online');
+            const appUrl = 'https://notegraph.online';
 
             await resend.emails.send({
                 from: process.env.RESEND_FROM_EMAIL || 'NoteGraph <noreply@notegraph.online>',

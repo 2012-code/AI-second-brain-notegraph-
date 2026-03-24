@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
         const fullName = user.user_metadata?.full_name || 'there';
         const firstName = fullName.split(' ')[0];
 
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL?.includes('localhost') ? 'https://notegraph.online' : (process.env.NEXT_PUBLIC_APP_URL || 'https://notegraph.online');
+        const appUrl = 'https://notegraph.online';
 
         const { error } = await resend.emails.send({
             from: process.env.RESEND_FROM_EMAIL || 'NoteGraph Digest <noreply@notegraph.online>',
