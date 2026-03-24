@@ -24,7 +24,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
     }
 
     const isActive = subscription?.status === 'active';
-    const isLockedOut = !isActive && isTrialExpired;
+    const isOwner = user.email === 'abdallahabdelnbii467@gmail.com';
+    const isLockedOut = !isActive && isTrialExpired && !isOwner;
 
     if (isLockedOut) {
         return <SubscriptionLockout />;
