@@ -81,7 +81,7 @@ export default function OnboardingPage() {
 
     return (
         <div className="min-h-screen flex items-center justify-center p-4"
-            style={{ background: 'radial-gradient(ellipse at top, #0B101E 0%, #0A0A0F 60%)' }}>
+            style={{ background: 'radial-gradient(ellipse at top, #27272A 0%, #050505 60%)' }}>
             {/* Logo */}
             <div className="absolute top-6 left-6 flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center"
@@ -141,7 +141,7 @@ export default function OnboardingPage() {
                         <div className="rounded-xl border border-border bg-surface p-4 mb-6"
                             style={{ minHeight: '180px' }}>
                             <textarea
-                                className="note-editor h-40"
+                                className="w-full bg-transparent text-text-primary outline-none resize-none h-40"
                                 placeholder="Start typing anything — an idea, a thought, something you want to remember..."
                                 value={firstNote}
                                 onChange={e => setFirstNote(e.target.value)}
