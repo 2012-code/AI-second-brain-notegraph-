@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'react-hot-toast';
 import { Brain, CreditCard, Check, ChevronRight, ChevronLeft } from 'lucide-react';
+import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 
 const USE_CASES = [
     { id: 'work', label: 'Work notes', emoji: '💼' },
@@ -197,13 +198,46 @@ export default function OnboardingPage() {
                             </div>
                         </div>
 
-                        <button onClick={() => handleFinish(false)} disabled={loading}
-                            className="btn-primary w-full h-11 relative z-10 mb-3">
-                            {loading ? 'Setting up...' : '🧠 Go to Dashboard'}
-                        </button>
+                        {process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID ? (
+                            <div className="mb-4 relative z-20">
+                                <PayPalScriptProvider options={{ 
+                                    clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID, 
+                                    vault: true, 
+                                    intent: "subscription" 
+                                }}>
+                                    <PayPalButtons 
+                                        style={{ height: 46, shape: "rect", color: "blue", layout: "horizontal", label: "subscribe" }}
+                                        createSubscription={async (data, actions) => {
+                                            const { data: { session } } = await supabase.auth.getSession();
+                                            const res = await fetch('/api/billing/create-subscription', {
+                                                method: 'POST',
+                                                headers: { Authorization: `Bearer ${session?.access_token}` }
+                                            });
+                                            const subData = await res.json();
+                                            if (subData.error) throw new Error(subData.error);
+                                            return subData.subscriptionId;
+                                        }}
+                                        onApprove={async (data, actions) => {
+                                            toast.success("Payment successful! Welcome to NoteGraph Pro.");
+                                            await handleFinish(false);
+                                        }}
+                                        onError={(err) => {
+                                            toast.error("PayPal checkout failed.");
+                                            console.error("PayPal Error:", err);
+                                        }}
+                                    />
+                                </PayPalScriptProvider>
+                            </div>
+                        ) : (
+                            <button onClick={() => handleFinish(false)} disabled={loading}
+                                className="btn-primary w-full h-11 relative z-10 mb-3">
+                                {loading ? 'Setting up...' : '🧠 Go to Dashboard'}
+                            </button>
+                        )}
+
                         <button onClick={() => handleFinish(true)}
                             className="w-full text-center text-sm text-text-muted hover:text-text-secondary transition-colors">
-                            Skip — I&apos;ll add payment later (7 days free access)
+                            Start 7-day free trial (Add payment later)
                         </button>
                     </div>
                 )}
