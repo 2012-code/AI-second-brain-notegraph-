@@ -161,10 +161,10 @@ CRITICAL LANGUAGE INSTRUCTION:
             const fullName = profile.full_name || 'there';
             const firstName = fullName.split(' ')[0];
 
-            const appUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://notegraph.vercel.app'));
+            const appUrl = process.env.NEXT_PUBLIC_APP_URL?.includes('localhost') ? 'https://notegraph.online' : (process.env.NEXT_PUBLIC_APP_URL || 'https://notegraph.online');
 
             await resend.emails.send({
-                from: process.env.RESEND_FROM_EMAIL || 'NoteGraph <onboarding@resend.dev>',
+                from: process.env.RESEND_FROM_EMAIL || 'NoteGraph <noreply@notegraph.online>',
                 to: user.email,
                 subject: `🧠 ${firstName}'s Daily NoteGraph Summary`,
                 html: `
