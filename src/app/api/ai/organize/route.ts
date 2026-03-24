@@ -16,8 +16,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Content too short to organize' }, { status: 400 });
     }
 
-    // 3. AI Call using unified helper
-    const prompt = `You are a professional note organizer. Analyze this note and return ONLY a valid JSON object with no markdown backticks, no explanation:
+    // 3. AI Call using unified helper with JSON Mode enabled
+    const prompt = `You are a professional note organizer. Analyze this note and return a valid JSON object.
 {
   "title": "concise title max 8 words",
   "tags": ["tag1", "tag2", "tag3"],
@@ -31,13 +31,20 @@ CRITICAL LANGUAGE INSTRUCTION: Identify the language of the Note and respond in 
 Original note:
 ${content}`;
 
+    // IMPORTANT: Using jsonMode: true and a lower temperature (0.1) for maximum reliability
     const rawResponse = await chat([
       { role: 'user', content: prompt }
-    ], { maxTokens: 1500 });
+    ], { 
+      maxTokens: 1500, 
+      jsonMode: true, 
+      temperature: 0.1 
+    });
 
     // 4. Robust JSON Extraction
     let result;
     try {
+      // With jsonMode, we can try to parse directly, but still use the substring 
+      // extraction just in case the model adds any tiny prefix/suffix.
       const startIdx = rawResponse.indexOf('{');
       const endIdx = rawResponse.lastIndexOf('}');
       if (startIdx === -1 || endIdx === -1) throw new Error('No JSON object found in AI response');
@@ -62,7 +69,7 @@ ${content}`;
           updated_at: new Date().toISOString(),
         })
         .eq('id', noteId)
-        .eq('user_id', user.id); // Security: only update if owned by user
+        .eq('user_id', user.id); 
 
       if (updateError) {
         console.error('Database update error:', updateError);

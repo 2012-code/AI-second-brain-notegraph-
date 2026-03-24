@@ -1,6 +1,5 @@
 
 export async function generateEmbedding(text: string): Promise<number[]> {
-    // Supabase's gte-small produces 384-dim embeddings
     try {
         const response = await fetch(
             `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-embedding`,
@@ -18,17 +17,13 @@ export async function generateEmbedding(text: string): Promise<number[]> {
             const data = await response.json();
             return data.embedding;
         }
-    } catch (e: unknown) {
-        // Fall back to a pseudo-embedding if edge function not available
-    }
-
+    } catch (e: unknown) {}
     return createPseudoEmbedding(text);
 }
 
 function createPseudoEmbedding(text: string): number[] {
     const vector = new Array(384).fill(0);
     const words = text.toLowerCase().split(/\s+/);
-
     for (let i = 0; i < words.length; i++) {
         const word = words[i];
         for (let j = 0; j < word.length; j++) {
@@ -36,14 +31,13 @@ function createPseudoEmbedding(text: string): number[] {
             vector[idx] += 1 / (words.length * word.length);
         }
     }
-
     const magnitude = Math.sqrt(vector.reduce((sum, v) => sum + v * v, 0)) || 1;
     return vector.map(v => v / magnitude);
 }
 
 export async function chat(
     messages: Array<{ role: 'user' | 'assistant' | 'system'; content: string }>,
-    options?: { model?: string; maxTokens?: number }
+    options?: { model?: string; maxTokens?: number; jsonMode?: boolean, temperature?: number }
 ) {
     const model = options?.model || 'llama-3.1-8b-instant';
     
@@ -58,7 +52,8 @@ export async function chat(
                 model,
                 messages,
                 max_tokens: options?.maxTokens || 1024,
-                temperature: 0.7,
+                temperature: options?.temperature ?? 0.7,
+                response_format: options?.jsonMode ? { type: 'json_object' } : undefined,
             }),
             cache: 'no-store'
         });
