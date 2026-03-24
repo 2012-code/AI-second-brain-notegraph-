@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'react-hot-toast';
-import { Brain, CreditCard, Check, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Brain, CreditCard, Check, ChevronRight, ChevronLeft, Loader2 } from 'lucide-react';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 
 const USE_CASES = [
@@ -23,6 +23,30 @@ export default function OnboardingPage() {
     const [selectedUseCases, setSelectedUseCases] = useState<string[]>([]);
     const [firstNote, setFirstNote] = useState('');
     const [loading, setLoading] = useState(false);
+    const [initializing, setInitializing] = useState(true);
+
+    useEffect(() => {
+        const checkStatus = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                router.push('/login');
+                return;
+            }
+
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('onboarding_completed')
+                .eq('id', user.id)
+                .single();
+
+            if (profile?.onboarding_completed) {
+                router.push('/dashboard');
+            } else {
+                setInitializing(false);
+            }
+        };
+        checkStatus();
+    }, [router, supabase]);
 
     const toggleUseCase = (id: string) => {
         if (id === 'all') {
@@ -38,7 +62,10 @@ export default function OnboardingPage() {
         setLoading(true);
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-            await supabase.from('profiles').update({ use_cases: selectedUseCases }).eq('id', user.id);
+            await supabase.from('profiles').upsert({ 
+                id: user.id,
+                use_cases: selectedUseCases 
+            });
         }
         setLoading(false);
         setStep(2);
@@ -74,11 +101,23 @@ export default function OnboardingPage() {
         setLoading(true);
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-            await supabase.from('profiles').update({ onboarding_completed: true }).eq('id', user.id);
+            await supabase.from('profiles').upsert({ 
+                id: user.id,
+                onboarding_completed: true 
+            });
         }
         toast.success('Welcome to NoteGraph! 🧠');
         router.push('/dashboard');
+        router.refresh();
     };
+
+    if (initializing) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-background-primary">
+                <Loader2 className="w-8 h-8 text-sky-500 animate-spin" />
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen flex items-center justify-center p-4"
