@@ -44,6 +44,12 @@ export async function POST(req: Request) {
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const accessToken = await getPayPalAccessToken();
+    
+    if (!PAYPAL_PLAN_ID) {
+      console.error("[FOUNDER CHECKOUT] Missing PAYPAL_FOUNDER_PLAN_ID env var");
+      return NextResponse.json({ error: "Configuration error: Missing Plan ID" }, { status: 500 });
+    }
+
     const createSubRes = await fetch(`${PAYPAL_API_BASE}/v1/billing/subscriptions`, {
       method: "POST",
       headers: {
@@ -63,7 +69,21 @@ export async function POST(req: Request) {
     });
 
     const subscriptionData = await createSubRes.json();
-    const approvalLink = subscriptionData.links.find((l: any) => l.rel === "approve");
+
+    if (!createSubRes.ok) {
+      console.error("[FOUNDER CHECKOUT] PayPal Error:", JSON.stringify(subscriptionData, null, 2));
+      return NextResponse.json({ 
+        error: `PayPal Error: ${subscriptionData.message || 'Failed to create subscription'}`,
+        debug: subscriptionData
+      }, { status: createSubRes.status });
+    }
+
+    const approvalLink = subscriptionData.links?.find((l: any) => l.rel === "approve");
+
+    if (!approvalLink) {
+      console.error("[FOUNDER CHECKOUT] No approval link in response:", subscriptionData);
+      return NextResponse.json({ error: "No approval link found in PayPal response" }, { status: 500 });
+    }
 
     await supabaseAdmin.from("subscriptions").upsert({
       user_id: user.id,
@@ -74,6 +94,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ redirectUrl: approvalLink.href });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[FOUNDER CHECKOUT] Critical Error:", error);
+    return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
   }
 }
