@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { Check, Shield, Zap, Star, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 
 export default function FounderDealPage() {
     const [loading, setLoading] = useState(false);
@@ -116,16 +117,42 @@ export default function FounderDealPage() {
                                     ))}
                                 </div>
 
-                                <button 
-                                    onClick={handleSubscribe}
-                                    disabled={loading}
-                                    className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-[#0EA5E9] to-[#0284C7] text-white font-bold text-lg flex items-center justify-center gap-2 hover:opacity-90 transition-all shadow-xl shadow-[#0EA5E9]/20 disabled:opacity-50 group"
-                                >
-                                    {loading ? 'Processing...' : (
-                                        <>Claim Founder Deal <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" /></>
+                                <div className="min-h-[150px] relative z-20">
+                                    {process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID ? (
+                                        <PayPalScriptProvider options={{ 
+                                            clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID, 
+                                            vault: true, 
+                                            intent: "subscription" 
+                                        }}>
+                                            <PayPalButtons 
+                                                style={{ height: 50, shape: "rect", color: "blue", layout: "vertical", label: "subscribe" }}
+                                                createSubscription={async () => {
+                                                    const { data: { session } } = await supabase.auth.getSession();
+                                                    const res = await fetch('/api/paypal/founder-checkout', {
+                                                        method: 'POST',
+                                                        headers: { Authorization: `Bearer ${session?.access_token}` }
+                                                    });
+                                                    const data = await res.json();
+                                                    if (data.subscriptionId) return data.subscriptionId;
+                                                    throw new Error(data.error || 'Failed to start checkout');
+                                                }}
+                                                onApprove={async (data: any, actions: any) => {
+                                                    toast.success("Welcome to the circle! Redirecting...");
+                                                    setTimeout(() => window.location.href = '/settings?payment=success', 2000);
+                                                }}
+                                                onError={(err: any) => {
+                                                    toast.error("Checkout failed. Please try again.");
+                                                    console.error("PayPal Error:", err);
+                                                }}
+                                            />
+                                        </PayPalScriptProvider>
+                                    ) : (
+                                        <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm text-center">
+                                            Checkout unavailable. Please contact support.
+                                        </div>
                                     )}
-                                </button>
-                                <p className="text-center text-xs text-text-muted mt-4 flex items-center justify-center gap-1.5">
+                                </div>
+                                <p className="text-center text-xs text-text-muted mt-4 flex items-center justify-center gap-1.5 line-through decoration-white/10">
                                     <Shield size={12} /> Securely managed via PayPal
                                 </p>
                             </div>

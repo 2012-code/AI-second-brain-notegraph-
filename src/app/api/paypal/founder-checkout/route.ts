@@ -92,7 +92,10 @@ export async function POST(req: Request) {
       status: "trialing",
     }, { onConflict: "user_id" });
 
-    return NextResponse.json({ redirectUrl: approvalLink.href });
+    return NextResponse.json({ 
+      subscriptionId: subscriptionData.id,
+      redirectUrl: approvalLink.href 
+    });
   } catch (error: any) {
     console.error("[FOUNDER CHECKOUT] Critical Error:", error);
     return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
