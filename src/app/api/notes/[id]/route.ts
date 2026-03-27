@@ -38,18 +38,6 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
             .from('notes').update(updateData).eq('id', params.id).eq('user_id', user.id).select().single();
         if (error) throw error;
 
-        // Re-trigger AI organization if content changed
-        if (content !== undefined && content.trim().length > 20) {
-            fetch(new URL('/api/ai/organize', request.url).toString(), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Cookie: request.headers.get('cookie') || '',
-                },
-                body: JSON.stringify({ noteId: params.id, content }),
-            }).catch(() => { });
-        }
-
         return NextResponse.json({ note });
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
