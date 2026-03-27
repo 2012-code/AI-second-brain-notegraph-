@@ -190,6 +190,7 @@ export default function NoteEditor({ note, onUpdate, onDelete, isExpanded = fals
         onUpdatePropsRef.current({
           ...note,
           title: data.organized.title || note.title,
+          content: data.organized.organizedContent || note.content,
           tags: data.organized.tags || note.tags,
           category: data.organized.category || note.category,
         });
