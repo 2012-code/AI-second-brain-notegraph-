@@ -17,28 +17,17 @@ import { marked } from 'marked';
 import EditorToolbar from './EditorToolbar';
 
 interface Props {
-  note: Note;
-  onUpdate: (updated: Note) => void;
-  onDelete: (id: string) => void;
-  isExpanded?: boolean;
-  onToggleExpand?: () => void;
+    note: Note;
+    onUpdate: (updated: Note) => void;
+    onDelete: (id: string) => void;
+    isExpanded?: boolean;
+    onToggleExpand?: () => void;
 }
 
 export default function NoteEditor({ note, onUpdate, onDelete, isExpanded = false, onToggleExpand }: Props) {
-  const [title, setTitle] = useState(note.title || '');
-  const latestTitle = useRef(note.title || '');
-  const isOrganizingRef = useRef(false);
-  const onUpdatePropsRef = useRef(onUpdate);
-
-  // Keep refs in sync with state/props
-  useEffect(() => {
-    latestTitle.current = title;
-  }, [title]);
-
-  useEffect(() => {
-    onUpdatePropsRef.current = onUpdate;
-  }, [onUpdate]);
-
+    const [title, setTitle] = useState(note.title || '');
+    // Ref so that the debounced autoSave always uses the latest title, not a stale closure
+    const latestTitle = useRef(note.title || '');
     const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
     const [isPreview, setIsPreview] = useState(false);
     const [isOrganizing, setIsOrganizing] = useState(false);
@@ -56,10 +45,10 @@ export default function NoteEditor({ note, onUpdate, onDelete, isExpanded = fals
                     body: JSON.stringify({ content: html, title: t || null }),
                 });
                 const data = await res.json();
-      if (data.note) {
-        onUpdatePropsRef.current(data.note);
-        setSaveStatus('saved');
-      }
+                if (data.note) {
+                    onUpdate(data.note);
+                    setSaveStatus('saved');
+                }
             } catch {
                 setSaveStatus('unsaved');
             }
@@ -82,32 +71,22 @@ export default function NoteEditor({ note, onUpdate, onDelete, isExpanded = fals
         ],
         content: note.content ? (note.content.trim().startsWith('<') ? note.content : marked.parse(note.content) as string) : '',
         editable: !isPreview,
-    immediatelyRender: false,
-    editorProps: {
-      attributes: {
-        class: 'prose-ai focus:outline-none',
-        dir: 'auto',
-      },
-    },
-  });
+        immediatelyRender: false,
+        onUpdate: ({ editor }) => {
+            setSaveStatus('unsaved');
+            // Use ref so we always get the latest title, not the stale closure value
+            autoSave(note.id, editor.getHTML(), latestTitle.current);
+        },
+        editorProps: {
+            attributes: {
+                class: 'prose-ai focus:outline-none',
+                dir: 'auto',
+            },
+        },
+    });
 
-  // Manage Tiptap update listener in a useEffect to avoid stale closures
-  useEffect(() => {
-    if (!editor) return;
-
-    const handleUpdate = () => {
-      if (isOrganizingRef.current) return;
-      setSaveStatus('unsaved');
-      autoSave(note.id, editor.getHTML(), latestTitle.current);
-    };
-
-    editor.on('update', handleUpdate);
-    return () => {
-      editor.off('update', handleUpdate);
-    };
-  }, [editor, note.id, autoSave]);
-
-    // Update content when switching notes
+    // Update content when switching notes (keyed by note.id only — not note.content,
+    // so that organize updates to the editor are NOT overwritten by this effect)
     useEffect(() => {
         if (editor && note) {
             const html = note.content ? (note.content.trim().startsWith('<') ? note.content : marked.parse(note.content) as string) : '';
@@ -117,8 +96,9 @@ export default function NoteEditor({ note, onUpdate, onDelete, isExpanded = fals
                 latestTitle.current = note.title || '';
             }
         }
-    }, [note.id, note.content, note.title, note, editor]);
-    
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [note.id, editor]);
+
     // Toggle editable when preview mode changes
     const handleTogglePreview = () => {
         const next = !isPreview;
@@ -166,48 +146,41 @@ export default function NoteEditor({ note, onUpdate, onDelete, isExpanded = fals
             toast.error('Add some content first');
             return;
         }
-    setIsOrganizing(true);
-    isOrganizingRef.current = true;
-    try {
-      const res = await fetch('/api/ai/organize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ noteId: note.id, content: textContent }),
-      });
-      const data = await res.json();
-      if (data.organized) {
-        // Update title and Ref before content to ensure onUpdate (if it fires) sees the new title
-        if (data.organized.title) {
-          setTitle(data.organized.title);
-          latestTitle.current = data.organized.title;
+        setIsOrganizing(true);
+        try {
+            const res = await fetch('/api/ai/organize', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ noteId: note.id, content: textContent }),
+            });
+            const data = await res.json();
+            if (data.organized) {
+                // Update title ref + state
+                if (data.organized.title) {
+                    setTitle(data.organized.title);
+                    latestTitle.current = data.organized.title;
+                }
+                // Set HTML content into editor
+                if (data.organized.organizedContent && editor) {
+                    editor.commands.setContent(data.organized.organizedContent);
+                }
+                // Update parent with the fully organized note so the list + state stay in sync
+                onUpdate({
+                    ...note,
+                    title: data.organized.title || note.title,
+                    content: data.organized.organizedContent || note.content,
+                    tags: data.organized.tags || note.tags,
+                    category: data.organized.category || note.category,
+                });
+                toast.success('Note organized! ✦');
+            } else if (data.error) {
+                toast.error(data.error);
+            }
+        } catch (e: unknown) {
+            toast.error('Organize error: ' + (e instanceof Error ? e.message : String(e)));
+        } finally {
+            setIsOrganizing(false);
         }
-
-        // Set HTML content into editor
-        if (data.organized.organizedContent && editor) {
-          editor.commands.setContent(data.organized.organizedContent);
-        }
-
-        onUpdatePropsRef.current({
-          ...note,
-          title: data.organized.title || note.title,
-          content: data.organized.organizedContent || note.content,
-          tags: data.organized.tags || note.tags,
-          category: data.organized.category || note.category,
-        });
-
-        toast.success('Note organized! ✦');
-      } else if (data.error) {
-        toast.error(data.error);
-      }
-    } catch (e: unknown) {
-      toast.error('Organize error: ' + (e instanceof Error ? e.message : String(e)));
-    } finally {
-      setIsOrganizing(false);
-      // Small delay before enabling autoSave again to let all cascaded events settle
-      setTimeout(() => {
-        isOrganizingRef.current = false;
-      }, 500);
-    }
     };
 
     const handleSummarize = async () => {
