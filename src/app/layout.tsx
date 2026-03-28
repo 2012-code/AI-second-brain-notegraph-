@@ -3,7 +3,7 @@ import { Inter } from "next/font/google"; // Keeping Inter for fallback if neede
 import "./globals.css";
 import '@xyflow/react/dist/style.css';
 import { Toaster } from "react-hot-toast";
-
+import { Analytics } from "@vercel/analytics/next";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const inter = Inter({ subsets: ["latin"] });
@@ -48,6 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             },
           }}
         />
+        <Analytics />
       </body>
     </html>
   );
